@@ -1,0 +1,9 @@
+{
+  "name": "tso-adventure-planner",
+  "version": "1.0.0",
+  "description": "TSO Adventure Planner with WASM Engine",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node planner/server.js"
+  }
+}
