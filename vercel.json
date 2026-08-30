@@ -4,7 +4,7 @@
     "api/**/*.js": {
       "includeFiles": "{wasm.js,wasm_bg.wasm,adventures/**,planner/**}",
       "maxDuration": 60,
-      "memory": 3009
+      "memory": 2048
     }
   }
 }
