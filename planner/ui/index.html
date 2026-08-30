@@ -1,0 +1,1814 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>TSO Adventure Planner — Tactical Engine</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    color-scheme: dark;
+    --bg-main: #0b0e14;
+    --bg-sidebar: #10141d;
+    --bg-card: rgba(20, 26, 38, 0.75);
+    --bg-card-hover: rgba(28, 36, 52, 0.85);
+    --bg-inset: #090c12;
+    --border-subtle: rgba(255, 255, 255, 0.08);
+    --border-card: rgba(255, 255, 255, 0.12);
+    --border-focus: #3b82f6;
+    --accent: #3b82f6;
+    --accent-glow: rgba(59, 130, 246, 0.25);
+    --accent-hover: #2563eb;
+    --text-main: #f1f5f9;
+    --text-muted: #94a3b8;
+    --text-dim: #64748b;
+    --c-small: #10b981;
+    --c-small-bg: rgba(16, 185, 129, 0.15);
+    --c-medium: #3b82f6;
+    --c-medium-bg: rgba(59, 130, 246, 0.15);
+    --c-large: #f59e0b;
+    --c-large-bg: rgba(245, 158, 11, 0.15);
+    --c-leader: #ef4444;
+    --c-leader-bg: rgba(239, 68, 68, 0.18);
+    --c-other: #64748b;
+    --c-other-bg: rgba(100, 116, 139, 0.15);
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --radius-full: 9999px;
+    --shadow-card: 0 10px 25px -5px rgba(0, 0, 0, 0.4), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
+    --shadow-diffuse: 0 20px 40px -15px rgba(0, 0, 0, 0.5);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  
+  body {
+    font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg-main);
+    color: var(--text-main);
+    min-height: 100dvh;
+    overflow-x: hidden;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .font-mono {
+    font-family: 'Geist Mono', 'JetBrains Mono', monospace;
+  }
+
+  /* Header */
+  header {
+    height: 60px;
+    padding: 0 24px;
+    background: rgba(16, 20, 29, 0.85);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--border-subtle);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 40;
+  }
+
+  .logo-group {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .logo-icon {
+    width: 32px;
+    height: 32px;
+    background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 0 16px var(--accent-glow);
+    color: #fff;
+    flex-shrink: 0;
+  }
+
+  h1 {
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .header-badge {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    background: rgba(59, 130, 246, 0.15);
+    color: #60a5fa;
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    padding: 2px 8px;
+    border-radius: var(--radius-full);
+  }
+
+  /* Mobile Tabs Switcher */
+  .mobile-nav-tabs {
+    display: none;
+    gap: 4px;
+    background: var(--bg-inset);
+    padding: 3px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-subtle);
+  }
+
+  .mobile-tab-btn {
+    background: transparent;
+    border: 0;
+    color: var(--text-muted);
+    padding: 6px 14px;
+    font-size: 13px;
+    font-weight: 600;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .mobile-tab-btn.active {
+    background: var(--accent);
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4);
+  }
+
+  .tab-count-badge {
+    background: rgba(255, 255, 255, 0.2);
+    font-size: 10px;
+    padding: 1px 5px;
+    border-radius: var(--radius-full);
+  }
+
+  /* Layout Container */
+  main {
+    display: grid;
+    grid-template-columns: 460px 1fr;
+    height: calc(100dvh - 60px);
+    max-width: 1920px;
+    margin: 0 auto;
+    overflow: hidden;
+  }
+
+  /* Left Sidebar Container with zero-scroll architecture */
+  #side {
+    background: var(--bg-sidebar);
+    border-right: 1px solid var(--border-subtle);
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
+    position: relative;
+  }
+
+  /* Sidebar Sub-navigation Tabs */
+  .sidebar-nav-tabs {
+    display: flex;
+    background: rgba(9, 12, 18, 0.7);
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border-subtle);
+    gap: 6px;
+    flex-shrink: 0;
+  }
+
+  .side-tab-btn {
+    flex: 1;
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--text-muted);
+    padding: 7px 6px;
+    font-size: 12px;
+    font-weight: 600;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    white-space: nowrap;
+  }
+
+  .side-tab-btn:hover {
+    color: var(--text-main);
+    background: rgba(255, 255, 255, 0.04);
+  }
+
+  .side-tab-btn.active {
+    background: var(--bg-card);
+    color: #60a5fa;
+    border-color: var(--border-subtle);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+  }
+
+  .side-tab-badge {
+    background: rgba(255, 255, 255, 0.1);
+    font-size: 10px;
+    padding: 1px 5px;
+    border-radius: var(--radius-full);
+    color: var(--text-main);
+  }
+
+  /* Sidebar Content Panels */
+  .sidebar-content-area {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .side-pane {
+    display: none;
+    flex-direction: column;
+    gap: 12px;
+    animation: fadeIn 0.2s ease-out;
+  }
+
+  .side-pane.active {
+    display: flex;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Sidebar Fixed Bottom Action Dock */
+  .sidebar-dock {
+    padding: 12px 16px;
+    background: rgba(13, 17, 24, 0.95);
+    border-top: 1px solid var(--border-subtle);
+    backdrop-filter: blur(12px);
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .dock-summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  .dock-summary b {
+    color: #fff;
+  }
+
+  /* Output Dashboard Area */
+  #out {
+    background: var(--bg-main);
+    padding: 24px 32px 100px;
+    overflow-y: auto;
+    height: 100%;
+  }
+
+  /* Custom Scrollbars */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.12);
+    border-radius: var(--radius-full);
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.25);
+  }
+
+  /* Card Containers */
+  .panel-card {
+    background: var(--bg-card);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: 14px;
+    box-shadow: var(--shadow-card);
+  }
+
+  .panel-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .panel-card-title {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .panel-card-title svg {
+    color: var(--accent);
+  }
+
+  /* Form & Controls */
+  label {
+    font-size: 13px;
+    color: var(--text-main);
+    font-weight: 500;
+  }
+
+  input[type=text], input[type=number], select {
+    background: var(--bg-inset);
+    color: var(--text-main);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    padding: 7px 10px;
+    font-size: 13px;
+    font-family: inherit;
+    transition: all 0.2s ease;
+    outline: none;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  input[type=text]:focus, input[type=number]:focus, select:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-glow);
+  }
+
+  input[type=text] {
+    width: 100%;
+  }
+
+  .input-search-wrap {
+    position: relative;
+    width: 100%;
+    margin-bottom: 8px;
+  }
+
+  .input-search-wrap input {
+    padding-left: 32px;
+  }
+
+  .input-search-icon {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-dim);
+    pointer-events: none;
+  }
+
+  .row {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    margin: 6px 0;
+    min-width: 0;
+  }
+
+  .row.between {
+    justify-content: space-between;
+  }
+
+  .num {
+    width: 74px;
+    text-align: right;
+  }
+
+  /* Modern Segmented Control / Pill Group */
+  .segmented-control {
+    display: flex;
+    background: var(--bg-inset);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    padding: 2px;
+    gap: 2px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .segmented-btn {
+    flex: 1;
+    background: transparent;
+    border: 0;
+    color: var(--text-muted);
+    padding: 5px 8px;
+    font-size: 11px;
+    font-weight: 600;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    text-align: center;
+    white-space: nowrap;
+  }
+
+  .segmented-btn:hover {
+    color: var(--text-main);
+  }
+
+  .segmented-btn.active {
+    background: var(--accent);
+    color: #fff;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+  }
+
+  .setting-group {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    margin: 8px 0;
+  }
+
+  .setting-label-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 12px;
+    color: var(--text-main);
+  }
+
+  /* Premium Tooltips (Anti-Generic Taste Standard) */
+  .has-tooltip {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    cursor: help;
+  }
+
+  .tooltip-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--text-dim);
+    margin-left: 5px;
+    transition: all 0.15s ease;
+    flex-shrink: 0;
+  }
+
+  .has-tooltip:hover .tooltip-icon,
+  .tooltip-icon:focus {
+    background: rgba(59, 130, 246, 0.25);
+    color: #60a5fa;
+    outline: none;
+  }
+
+  .tooltip-popover {
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 0;
+    width: 260px;
+    background: rgba(15, 23, 42, 0.96);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: var(--radius-sm);
+    padding: 9px 12px;
+    font-size: 11px;
+    line-height: 1.45;
+    color: #cbd5e1;
+    box-shadow: 0 12px 30px -5px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.05);
+    pointer-events: none;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(4px);
+    transition: opacity 0.18s cubic-bezier(0.16, 1, 0.3, 1), transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.18s;
+    z-index: 100;
+  }
+
+  .tooltip-popover.pos-right {
+    left: auto;
+    right: 0;
+  }
+
+  .has-tooltip:hover .tooltip-popover,
+  .has-tooltip:focus-within .tooltip-popover {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+  }
+
+  .tooltip-popover strong {
+    display: block;
+    color: #fff;
+    font-size: 11.5px;
+    font-weight: 700;
+    margin-bottom: 3px;
+  }
+
+  .tooltip-popover .tooltip-why {
+    margin-top: 4px;
+    color: #93c5fd;
+    font-size: 10.5px;
+    display: block;
+  }
+
+  /* Buttons */
+  button {
+    font-family: inherit;
+    background: var(--accent);
+    color: #fff;
+    border: 0;
+    border-radius: var(--radius-sm);
+    padding: 8px 14px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1), background 0.15s ease, opacity 0.15s ease, box-shadow 0.15s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    user-select: none;
+  }
+
+  button:hover:not(:disabled) {
+    background: var(--accent-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px var(--accent-glow);
+  }
+
+  button:active:not(:disabled) {
+    transform: scale(0.98);
+  }
+
+  button.sec {
+    background: rgba(255, 255, 255, 0.07);
+    color: var(--text-muted);
+    border: 1px solid var(--border-subtle);
+  }
+
+  button.sec:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.12);
+    color: var(--text-main);
+    box-shadow: none;
+  }
+
+  button.sm {
+    padding: 4px 8px;
+    font-size: 11px;
+  }
+
+  button:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    transform: none !important;
+  }
+
+  .btn-primary-large {
+    width: 100%;
+    padding: 11px 18px;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+    box-shadow: 0 6px 16px -2px rgba(59, 130, 246, 0.5);
+    border-radius: var(--radius-md);
+  }
+
+  .btn-primary-large:hover:not(:disabled) {
+    box-shadow: 0 8px 20px -2px rgba(59, 130, 246, 0.6);
+  }
+
+  /* File Upload Zone */
+  .drop-zone {
+    border: 1.5px dashed var(--border-subtle);
+    background: rgba(11, 14, 20, 0.5);
+    border-radius: var(--radius-sm);
+    padding: 12px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-bottom: 8px;
+    position: relative;
+  }
+
+  .drop-zone:hover {
+    border-color: var(--accent);
+    background: rgba(59, 130, 246, 0.05);
+  }
+
+  .drop-zone input[type=file] {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+    width: 100%;
+    height: 100%;
+  }
+
+  .drop-zone-text {
+    font-size: 12px;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+
+  .drop-zone-text b {
+    color: #60a5fa;
+  }
+
+  /* Tables */
+  .table-wrap {
+    height: calc(100vh - 280px);
+    min-height: 200px;
+    overflow-y: auto;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    background: var(--bg-inset);
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+  }
+
+  th, td {
+    text-align: left;
+    padding: 6px 10px;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  th {
+    background: rgba(16, 20, 29, 0.95);
+    color: var(--text-dim);
+    font-weight: 600;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    backdrop-filter: blur(8px);
+  }
+
+  tr:last-child td {
+    border-bottom: 0;
+  }
+
+  tr:hover td {
+    background: rgba(255, 255, 255, 0.02);
+  }
+
+  input[type=checkbox] {
+    accent-color: var(--accent);
+    width: 15px;
+    height: 15px;
+    cursor: pointer;
+    border-radius: 4px;
+  }
+
+  /* Camp Buttons Grid */
+  .campgrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
+    gap: 6px;
+    margin: 8px 0;
+    max-height: 220px;
+    overflow-y: auto;
+    padding: 4px 2px;
+  }
+
+  .camp {
+    position: relative;
+    border: 1px solid transparent;
+    border-radius: var(--radius-sm);
+    height: 38px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #fff;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+    user-select: none;
+  }
+
+  .camp:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+  }
+
+  .camp:active {
+    transform: scale(0.95);
+  }
+
+  .camp.small { background: #166534; border-color: #22c55e; }
+  .camp.medium { background: #1e40af; border-color: #3b82f6; }
+  .camp.large { background: #9a3412; border-color: #f97316; }
+  .camp.leader { background: #991b1b; border-color: #ef4444; }
+  .camp.other { background: #334155; border-color: #64748b; }
+
+  .camp.queued {
+    box-shadow: 0 0 0 2px #fff, 0 0 12px var(--accent-glow);
+    filter: brightness(1.2);
+  }
+
+  .camp-order-badge {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background: #fff;
+    color: #0b0e14;
+    font-size: 9px;
+    font-weight: 800;
+    width: 16px;
+    height: 16px;
+    border-radius: var(--radius-full);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+  }
+
+  /* Camp Queue Chips */
+  .queue-container {
+    background: var(--bg-inset);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    padding: 8px;
+    margin: 6px 0;
+    max-height: 100px;
+    overflow-y: auto;
+  }
+
+  .queue {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .qchip {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    padding: 3px 8px;
+    font-size: 11px;
+    font-weight: 500;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.15s ease;
+  }
+
+  .qchip:hover {
+    background: rgba(239, 68, 68, 0.2);
+    border-color: rgba(239, 68, 68, 0.5);
+    color: #fca5a5;
+  }
+
+  .qchip b {
+    color: #93c5fd;
+    font-weight: 700;
+  }
+
+  .qchip-close {
+    font-size: 12px;
+    opacity: 0.6;
+  }
+
+  .qchip:hover .qchip-close {
+    opacity: 1;
+  }
+
+  /* Type Legend */
+  .type-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    font-size: 11px;
+    color: var(--text-muted);
+    margin: 4px 0 8px;
+  }
+
+  .type-legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .legend-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: var(--radius-full);
+  }
+
+  .t-small { color: #34d399; }
+  .t-medium { color: #60a5fa; }
+  .t-large { color: #fbbf24; }
+  .t-leader { color: #f87171; }
+  .t-other { color: #94a3b8; }
+
+  /* Output / Tactical Dashboard */
+  .dashboard-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+
+  .dashboard-title-group {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .dashboard-title {
+    font-size: 20px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: var(--text-main);
+  }
+
+  .dashboard-subtitle {
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+
+  /* Bento Stats Bar */
+  .bento-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+
+  .bento-stat-card {
+    background: var(--bg-card);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: 12px 14px;
+    box-shadow: var(--shadow-card);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .stat-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 600;
+    color: var(--text-dim);
+  }
+
+  .stat-value {
+    font-size: 18px;
+    font-weight: 800;
+    color: #fff;
+  }
+
+  .stat-value.ok { color: #34d399; }
+  .stat-value.warn { color: #fbbf24; }
+  .stat-value.accent { color: #60a5fa; }
+
+  /* Wave Cards */
+  .wave {
+    background: var(--bg-card);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    margin-bottom: 20px;
+    overflow: hidden;
+    box-shadow: var(--shadow-diffuse);
+    transition: transform 0.2s ease, border-color 0.2s ease;
+  }
+
+  .wave:hover {
+    border-color: var(--border-card);
+  }
+
+  .wave-header {
+    background: rgba(28, 36, 52, 0.7);
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--border-subtle);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .wave-title-wrap {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .wave-badge {
+    background: var(--accent);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 800;
+    padding: 3px 8px;
+    border-radius: var(--radius-sm);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .wave-title {
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+
+  .wave-summary-pills {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .summary-pill {
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--border-subtle);
+    padding: 3px 8px;
+    border-radius: var(--radius-full);
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+
+  .summary-pill b {
+    color: var(--text-main);
+  }
+
+  .wave-body {
+    padding: 16px 18px;
+  }
+
+  /* Attack Row */
+  .atk {
+    background: rgba(11, 14, 20, 0.4);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: 14px;
+    margin-bottom: 12px;
+    transition: all 0.2s ease;
+  }
+
+  .atk:last-child {
+    margin-bottom: 0;
+  }
+
+  .atk:hover {
+    background: rgba(16, 22, 34, 0.6);
+    border-color: rgba(255, 255, 255, 0.15);
+  }
+
+  .atk-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+
+  .atk-camp-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    font-weight: 700;
+  }
+
+  .camp-type-pill {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 2px 6px;
+    border-radius: var(--radius-full);
+  }
+
+  .camp-type-pill.small { background: var(--c-small-bg); color: var(--c-small); border: 1px solid rgba(16,185,129,0.3); }
+  .camp-type-pill.medium { background: var(--c-medium-bg); color: var(--c-medium); border: 1px solid rgba(59,130,246,0.3); }
+  .camp-type-pill.large { background: var(--c-large-bg); color: var(--c-large); border: 1px solid rgba(245,158,11,0.3); }
+  .camp-type-pill.leader { background: var(--c-leader-bg); color: var(--c-leader); border: 1px solid rgba(239,68,68,0.3); }
+  .camp-type-pill.other { background: var(--c-other-bg); color: var(--c-other); border: 1px solid rgba(100,116,139,0.3); }
+
+  .enemy-box {
+    font-size: 12px;
+    color: var(--text-muted);
+    background: rgba(0, 0, 0, 0.25);
+    padding: 6px 10px;
+    border-radius: var(--radius-sm);
+    margin-bottom: 10px;
+    border-left: 2px solid var(--border-subtle);
+  }
+
+  /* Squad Steps */
+  .squad-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin: 10px 0;
+  }
+
+  .step {
+    background: rgba(22, 29, 43, 0.7);
+    border: 1px solid var(--border-subtle);
+    border-left: 3px solid var(--accent);
+    border-radius: var(--radius-sm);
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .step-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 13px;
+  }
+
+  .step-gen-name {
+    font-weight: 700;
+    color: #93c5fd;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .step-role-badge {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 6px;
+    border-radius: var(--radius-full);
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--text-muted);
+  }
+
+  .step-role-badge.opener {
+    background: rgba(245, 158, 11, 0.15);
+    color: #fbbf24;
+    border: 1px solid rgba(245, 158, 11, 0.3);
+  }
+
+  .step-role-badge.finisher {
+    background: rgba(16, 185, 129, 0.15);
+    color: #34d399;
+    border: 1px solid rgba(16, 185, 129, 0.3);
+  }
+
+  .step-army {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-main);
+  }
+
+  .step-stats {
+    font-size: 11px;
+    color: var(--text-muted);
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .atk-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+    font-size: 12px;
+    padding-top: 8px;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+  }
+
+  .tag-pill {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: var(--radius-full);
+  }
+
+  .tag-pill.warn {
+    background: rgba(245, 158, 11, 0.15);
+    color: #fbbf24;
+    border: 1px solid rgba(245, 158, 11, 0.3);
+  }
+
+  .tag-pill.ok {
+    background: rgba(16, 185, 129, 0.15);
+    color: #34d399;
+    border: 1px solid rgba(16, 185, 129, 0.3);
+  }
+
+  .wave-stock-footer {
+    background: rgba(11, 14, 20, 0.5);
+    border-top: 1px solid var(--border-subtle);
+    padding: 10px 18px;
+    font-size: 11px;
+    color: var(--text-muted);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  /* Empty and Loading States */
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 60px 20px;
+    background: var(--bg-card);
+    border: 1px dashed var(--border-subtle);
+    border-radius: var(--radius-lg);
+    gap: 14px;
+    color: var(--text-muted);
+  }
+
+  .empty-state-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: var(--radius-md);
+    background: rgba(59, 130, 246, 0.1);
+    color: var(--accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 6px;
+  }
+
+  .empty-state-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    text-align: left;
+    font-size: 13px;
+    margin-top: 8px;
+  }
+
+  .empty-step {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .empty-step-num {
+    width: 20px;
+    height: 20px;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: var(--radius-full);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-main);
+  }
+
+  /* Skeleton Loading */
+  .skeleton-loader {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .skeleton-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .skeleton-shimmer {
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.06), transparent);
+    animation: shimmer 1.5s infinite;
+  }
+
+  @keyframes shimmer {
+    100% { transform: translateX(100%); }
+  }
+
+  .skeleton-bar {
+    height: 14px;
+    background: rgba(255, 255, 255, 0.06);
+    border-radius: var(--radius-sm);
+    margin-bottom: 10px;
+  }
+
+  /* Mobile Sticky Bottom Bar */
+  .mobile-bottom-bar {
+    display: none;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(16, 20, 29, 0.95);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-top: 1px solid var(--border-subtle);
+    padding: 10px 16px;
+    z-index: 50;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .mobile-bottom-info {
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  .mobile-bottom-info b {
+    color: #fff;
+  }
+
+  /* Utilities */
+  .muted { color: var(--text-muted); }
+  .dim { color: var(--text-dim); }
+  .ok { color: #34d399; }
+  .warn { color: #fbbf24; }
+  .danger { color: #f87171; }
+  .gap-sm { gap: 6px; }
+  .gap-md { gap: 12px; }
+
+  /* Responsive Design */
+  @media (max-width: 1024px) {
+    main {
+      grid-template-columns: 1fr;
+      height: auto;
+      min-height: calc(100dvh - 60px);
+      overflow: visible;
+    }
+
+    .mobile-nav-tabs {
+      display: flex;
+    }
+
+    #side {
+      height: auto;
+      border-right: 0;
+      padding-bottom: 90px;
+      overflow: visible;
+    }
+
+    .sidebar-content-area {
+      overflow: visible;
+    }
+
+    .table-wrap {
+      height: 300px;
+    }
+
+    #out {
+      height: auto;
+      max-height: none;
+      padding: 16px 16px 90px;
+      overflow: visible;
+    }
+
+    .mobile-bottom-bar {
+      display: flex;
+    }
+
+    /* Tab view toggling on mobile */
+    body.tab-params #out {
+      display: none;
+    }
+    body.tab-params #side {
+      display: flex;
+    }
+
+    body.tab-results #side {
+      display: none;
+    }
+    body.tab-results #out {
+      display: block;
+    }
+  }
+
+  @media (max-width: 640px) {
+    header {
+      padding: 0 14px;
+    }
+    h1 span.header-badge {
+      display: none;
+    }
+    .campgrid {
+      grid-template-columns: repeat(auto-fill, minmax(36px, 1fr));
+      gap: 4px;
+    }
+    .camp {
+      height: 36px;
+      font-size: 11px;
+    }
+  }
+</style>
+</head>
+<body class="tab-params">
+
+<!-- Header -->
+<header>
+  <div class="logo-group">
+    <div class="logo-icon">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+        <polyline points="2 17 12 22 22 17"></polyline>
+        <polyline points="2 12 12 17 22 12"></polyline>
+      </svg>
+    </div>
+    <h1>
+      <span>TSO Adventure Planner</span>
+      <span class="header-badge">WASM Engine</span>
+    </h1>
+  </div>
+
+  <!-- Mobile View Switcher -->
+  <div class="mobile-nav-tabs">
+    <button class="mobile-tab-btn active" id="tabBtnParams">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="3"></circle>
+        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+      </svg>
+      Параметры
+    </button>
+    <button class="mobile-tab-btn" id="tabBtnResults">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path>
+        <polyline points="14 2 14 8 20 8"></polyline>
+        <line x1="16" y1="13" x2="8" y2="13"></line>
+        <line x1="16" y1="17" x2="8" y2="17"></line>
+        <line x1="10" y1="9" x2="8" y2="9"></line>
+      </svg>
+      Результат
+      <span class="tab-count-badge font-mono" id="mobileWaveCount">0</span>
+    </button>
+  </div>
+</header>
+
+<main>
+  <!-- Sidebar / Parameters -->
+  <div id="side">
+    
+    <!-- Sub-navigation Tabs across Sidebar -->
+    <div class="sidebar-nav-tabs">
+      <button class="side-tab-btn active" data-tab="camps">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"></circle>
+          <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon>
+        </svg>
+        Лагеря
+        <span class="side-tab-badge font-mono" id="sideBadgeCamps">0</span>
+      </button>
+
+      <button class="side-tab-btn" data-tab="generals">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+          <circle cx="9" cy="7" r="4"></circle>
+        </svg>
+        Генералы
+        <span class="side-tab-badge font-mono" id="sideBadgeGenerals">0</span>
+      </button>
+
+      <button class="side-tab-btn" data-tab="troops">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+        </svg>
+        Войска
+      </button>
+
+      <button class="side-tab-btn" data-tab="settings">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="3"></circle>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+        </svg>
+        Точность
+      </button>
+    </div>
+
+    <!-- Content Area for Tab Panes -->
+    <div class="sidebar-content-area">
+      
+      <!-- PANE 1: Camps and Adventure (Default Active) -->
+      <div class="side-pane active" id="pane-camps">
+        <div class="panel-card">
+          <div class="panel-card-header">
+            <div class="panel-card-title">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"></circle>
+                <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon>
+              </svg>
+              Приключение
+            </div>
+            <button class="sec sm" id="advReload" title="Обновить список приключений">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="23 4 23 10 17 10"></polyline>
+                <polyline points="1 20 1 14 7 14"></polyline>
+                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+              </svg>
+              ↻
+            </button>
+          </div>
+
+          <div class="row" style="margin-top:0;">
+            <select id="adv" style="width:100%; font-weight:600;"></select>
+          </div>
+          <div class="dim" id="advDir" style="font-size:11px; margin-bottom:6px;"></div>
+
+          <div class="type-legend">
+            <span class="type-legend-item"><span class="legend-dot" style="background:#10b981;"></span> малый</span>
+            <span class="type-legend-item"><span class="legend-dot" style="background:#3b82f6;"></span> средний</span>
+            <span class="type-legend-item"><span class="legend-dot" style="background:#f59e0b;"></span> большой</span>
+            <span class="type-legend-item"><span class="legend-dot" style="background:#ef4444;"></span> босс</span>
+          </div>
+
+          <div id="campBtns" class="campgrid font-mono"></div>
+
+          <div class="row between" style="margin-top:8px;">
+            <button class="sec sm" id="campAll">Все по порядку</button>
+            <button class="sec sm" id="campClear">Очистить</button>
+          </div>
+        </div>
+
+        <div class="panel-card">
+          <div class="row between" style="margin:0 0 6px 0;">
+            <label style="font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--text-dim); font-weight:700;">Очередь атаки</label>
+            <span class="dim font-mono" id="queueCount" style="font-size:11px;">0 выбрано</span>
+          </div>
+          
+          <div class="queue-container">
+            <div id="campQueue" class="queue font-mono"></div>
+          </div>
+
+          <details style="margin-top:6px;">
+            <summary class="dim" style="font-size:11px; cursor:pointer; user-select:none;">Ввести номера вручную</summary>
+            <div class="row" style="margin-top:6px;">
+              <input type="text" id="camps" placeholder="например: 1, 2, 3, 4, 5">
+            </div>
+          </details>
+        </div>
+      </div>
+
+      <!-- PANE 2: Generals -->
+      <div class="side-pane" id="pane-generals">
+        <div class="panel-card">
+          <div class="panel-card-header">
+            <div class="panel-card-title">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+                <circle cx="9" cy="7" r="4"></circle>
+              </svg>
+              Загрузка генералов
+            </div>
+            <div class="row gap-sm" style="margin:0;">
+              <button class="sec sm" id="genAll">Все</button>
+              <button class="sec sm" id="genNone">Никого</button>
+            </div>
+          </div>
+
+          <div class="drop-zone">
+            <input type="file" id="genFile" accept=".json">
+            <div class="drop-zone-text">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="17 8 12 3 7 8"></polyline>
+                <line x1="12" y1="3" x2="12" y2="15"></line>
+              </svg>
+              <span><b>Файл экспорта</b> tsowiki-generals.json</span>
+            </div>
+          </div>
+
+          <div class="input-search-wrap">
+            <svg class="input-search-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <input type="text" id="genSearch" placeholder="Поиск генерала...">
+          </div>
+
+          <div class="table-wrap">
+            <table id="genTable">
+              <thead>
+                <tr>
+                  <th style="width:34px;">Исп.</th>
+                  <th>Имя</th>
+                  <th>Тип</th>
+                  <th style="width:50px; text-align:right;">Вмест.</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td colspan="4" class="dim" style="text-align:center; padding:16px;">Загрузите файл экспорта генералов</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="muted" id="genHint" style="font-size:11px; margin-top:6px;"></div>
+        </div>
+      </div>
+
+      <!-- PANE 3: Troops & Stock -->
+      <div class="side-pane" id="pane-troops">
+        <div class="panel-card">
+          <div class="panel-card-header">
+            <div class="panel-card-title">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+              </svg>
+              Войска и склад
+            </div>
+            <div class="row gap-sm" style="margin:0;">
+              <button class="sec sm" id="presetElite">Элитные</button>
+              <button class="sec sm" id="presetAll">Все</button>
+            </div>
+          </div>
+
+          <div class="table-wrap">
+            <table id="unitTable">
+              <thead>
+                <tr>
+                  <th>Юнит</th>
+                  <th style="width:36px; text-align:center;">Исп.</th>
+                  <th style="width:80px; text-align:center;">
+                    <span class="has-tooltip">
+                      <span>Без потерь</span>
+                      <span class="tooltip-popover pos-right">
+                        <strong>Режим «Без потерь» (noLoss)</strong>
+                        <span>Строго защищает юнита от любых потерь. Юнит никогда не попадёт во вскрывающую/жертвенную волну и будет использоваться только при гарантированной 100% победе с 0 потерь.</span>
+                      </span>
+                    </span>
+                  </th>
+                  <th style="width:75px; text-align:right;">
+                    <span class="has-tooltip">
+                      <span>Склад</span>
+                      <span class="tooltip-popover pos-right">
+                        <strong>Лимит склада войск</strong>
+                        <span>Максимальное количество юнитов, доступных суммарно для всех генералов одной волны. Пустое поле = без ограничений.</span>
+                      </span>
+                    </span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- PANE 4: Accuracy & Algorithm Settings -->
+      <div class="side-pane" id="pane-settings">
+        <div class="panel-card">
+          <div class="panel-card-header">
+            <div class="panel-card-title">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+              </svg>
+              Параметры алгоритма
+            </div>
+          </div>
+
+          <div class="setting-group">
+            <div class="setting-label-row">
+              <span class="has-tooltip">
+                <label>Режим генералов</label>
+                <span class="tooltip-icon" tabindex="0">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                </span>
+                <span class="tooltip-popover">
+                  <strong>Режим использования генералов</strong>
+                  <span><b>Максимум</b>: главная цель — уничтожить максимум лагерей за 1 волну и сократить волны во всём приключении (например, уложиться в 2 волны). На лёгких лагерях экономятся генералы (соло), а на сложных используются отряды.</span>
+                  <span class="tooltip-why"><b>Минимум</b>: главная цель — максимальное сбережение генералов и войск без раздувания волны.</span>
+                </span>
+              </span>
+            </div>
+            <div class="segmented-control" id="ctrlGenUsage">
+              <button class="segmented-btn active" data-val="min">Минимум (беречь)</button>
+              <button class="segmented-btn" data-val="max">Максимум (пройти)</button>
+            </div>
+          </div>
+
+          <div class="setting-group">
+            <div class="setting-label-row">
+              <span class="has-tooltip">
+                <label>Списание потерь со склада</label>
+                <span class="tooltip-icon" tabindex="0">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                </span>
+                <span class="tooltip-popover">
+                  <strong>Списание потерь со склада</strong>
+                  <span><b>По худшему (max)</b>: списывает максимальный урон из всех прогонов симулятора. Гарантирует, что армия не останется без войск при неудачном рандоме.</span>
+                  <span class="tooltip-why"><b>По среднему (avg)</b>: списывает среднее матожидание потерь.</span>
+                </span>
+              </span>
+            </div>
+            <div class="segmented-control" id="ctrlLossAcc">
+              <button class="segmented-btn active" data-val="max">По худшему (max)</button>
+              <button class="segmented-btn" data-val="avg">По среднему (avg)</button>
+            </div>
+          </div>
+
+          <div class="setting-group">
+            <div class="setting-label-row">
+              <span class="has-tooltip">
+                <label>Жертвенные армии (вскрытие)</label>
+                <span class="tooltip-icon" tabindex="0">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                </span>
+                <span class="tooltip-popover">
+                  <strong>Жертвенные армии</strong>
+                  <span><b>Дешёвые</b>: разрешает жертвовать на вскрытии только дешёвыми войсками (Новобранцы, Ополчение, Мечники, Рыцари). Юниты «без потерь» запрещены.</span>
+                  <span class="tooltip-why"><b>Любые</b>: разрешает любые незащищённые войска. <b>Запретить</b>: запрещает атаки с гибелью армии.</span>
+                </span>
+              </span>
+            </div>
+            <div class="segmented-control" id="ctrlSacrifice">
+              <button class="segmented-btn active" data-val="cheap">Дешёвые</button>
+              <button class="segmented-btn" data-val="any">Любые</button>
+              <button class="segmented-btn" data-val="none">Запретить</button>
+            </div>
+          </div>
+
+          <div class="row between" style="margin-top:10px;">
+            <span class="has-tooltip">
+              <label for="step">Шаг состава (%)</label>
+              <span class="tooltip-icon" tabindex="0">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+              </span>
+              <span class="tooltip-popover">
+                <strong>Шаг сетки состава (%)</strong>
+                <span>Шаг перебора долей войск в армии генерала. Например, 10% перебирает состав с шагом 10%, 20%, 30%...</span>
+                <span class="tooltip-why">10% — оптимальный баланс высокой точности и скорости.</span>
+              </span>
+            </span>
+            <input class="num font-mono" type="number" id="step" value="10" min="1" max="50">
+          </div>
+
+          <div class="row between">
+            <span class="has-tooltip">
+              <label for="reps">Прогонов (отбор)</label>
+              <span class="tooltip-icon" tabindex="0">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+              </span>
+              <span class="tooltip-popover">
+                <strong>Прогонов при отборе</strong>
+                <span>Количество симуляций боя при первичном скрининге кандидатов. Быстро отсеивает нежизнеспособные составы.</span>
+              </span>
+            </span>
+            <input class="num font-mono" type="number" id="reps" value="60">
+          </div>
+
+          <div class="row between">
+            <span class="has-tooltip">
+              <label for="verify">Прогонов (проверка)</label>
+              <span class="tooltip-icon" tabindex="0">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+              </span>
+              <span class="tooltip-popover">
+                <strong>Прогонов при проверке</strong>
+                <span>Количество проверочных симуляций финальной победной армии для гарантии 100% победы и отсутствия скрытых шансов проиграть.</span>
+              </span>
+            </span>
+            <input class="num font-mono" type="number" id="verify" value="400">
+          </div>
+
+          <div class="row between">
+            <span class="has-tooltip">
+              <label for="maxGen">Макс. генералов на лагерь</label>
+              <span class="tooltip-icon" tabindex="0">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+              </span>
+              <span class="tooltip-popover">
+                <strong>Макс. генералов в отряде</strong>
+                <span>Ограничение размера цепочки генералов на один лагерь. 0 = без ограничений (сколько необходимо для взятия лагеря).</span>
+              </span>
+            </span>
+            <input class="num font-mono" type="number" id="maxGen" value="0" min="0" max="20">
+          </div>
+          <div class="dim" style="font-size:11px; margin:-4px 0 6px;">0 = без лимита (все генералы)</div>
+          
+          <div class="row between">
+            <span class="has-tooltip">
+              <label for="beam">Ширина луча (beam)</label>
+              <span class="tooltip-icon" tabindex="0">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+              </span>
+              <span class="tooltip-popover">
+                <strong>Ширина лучевого поиска</strong>
+                <span>Количество лучших промежуточных армий, которые передаются на следующий этап составления отряда. Больше = шире поиск.</span>
+              </span>
+            </span>
+            <input class="num font-mono" type="number" id="beam" value="5" min="2" max="20">
+          </div>
+
+          <div class="row" style="margin-top:10px;">
+            <input type="checkbox" id="chain">
+            <span class="has-tooltip">
+              <label for="chain" style="cursor:pointer; font-size:12px;">Одна армия берёт лагеря подряд (цепочка)</label>
+              <span class="tooltip-icon" tabindex="0">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+              </span>
+              <span class="tooltip-popover">
+                <strong>Цепочка атак одним генералом</strong>
+                <span>Генерал с одной армией последовательно зачищает несколько лагерей подряд, сохраняя выживших юнитов от боя к бою.</span>
+              </span>
+            </span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Pinned Bottom Action Dock in Sidebar -->
+    <div class="sidebar-dock">
+      <div class="dock-summary font-mono">
+        <span id="dockAdvLabel">—</span>
+        <span>Очередь: <b id="dockQueueCount">0</b> лаг.</span>
+      </div>
+      <button class="btn-primary-large" id="run">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <polygon points="5 3 19 12 5 21 5 3"></polygon>
+        </svg>
+        Рассчитать план волн
+      </button>
+    </div>
+
+  </div>
+
+  <!-- Main Output Area (Tactical Dashboard) -->
+  <div id="out">
+    <div class="empty-state" id="emptyState">
+      <div class="empty-state-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+          <polyline points="2 17 12 22 22 17"></polyline>
+          <polyline points="2 12 12 17 22 12"></polyline>
+        </svg>
+      </div>
+      <h3 style="font-size:16px; font-weight:700; color:var(--text-main);">Готов к расчёту тактики</h3>
+      <p style="font-size:13px; max-width:420px;">Выберите лагеря во вкладке «Лагеря», настройте генералов и нажмите «Рассчитать план волн».</p>
+      
+      <div class="empty-state-steps">
+        <div class="empty-step">
+          <div class="empty-step-num font-mono">1</div>
+          <span>Загрузите файл экспорта генералов во вкладке <b>Генералы</b></span>
+        </div>
+        <div class="empty-step">
+          <div class="empty-step-num font-mono">2</div>
+          <span>Кликните по лагерям на карте во вкладке <b>Лагеря</b></span>
+        </div>
+        <div class="empty-step">
+          <div class="empty-step-num font-mono">3</div>
+          <span>Получите 100% надёжный план боя с разбивкой на волны</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- Mobile Sticky Bottom Action Bar -->
+<div class="mobile-bottom-bar" id="mobileActionBar">
+  <div class="mobile-bottom-info">
+    <div>Лагерей в очереди: <b class="font-mono" id="mobileQueueCount">0</b></div>
+    <div class="dim font-mono" id="mobileAdventureName">—</div>
+  </div>
+  <button id="runMobile" style="padding:10px 18px; font-weight:700; border-radius:var(--radius-sm);">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+      <polygon points="5 3 19 12 5 21 5 3"></polygon>
+    </svg>
+    Рассчитать
+  </button>
+</div>
+
+<script src="/app.js"></script>
+</body>
+</html>

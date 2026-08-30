@@ -1,0 +1,10 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "functions": {
+    "api/**/*.js": {
+      "includeFiles": "{wasm.js,wasm_bg.wasm,adventures/**,planner/**}",
+      "maxDuration": 60,
+      "memory": 3009
+    }
+  }
+}

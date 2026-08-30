@@ -1,0 +1,13 @@
+{
+  "unitValues": {},
+  "specialists": [
+    { "id": "s1", "name": "Майор 1", "base": "MajorGeneral", "skills": { "Skill_IncreaseCapacity": 3 } },
+    { "id": "s2", "name": "Майор 2", "base": "MajorGeneral", "skills": { "Skill_IncreaseCapacity": 3 } },
+    { "id": "s3", "name": "Майор 3", "base": "MajorGeneral", "skills": { "Skill_IncreaseCapacity": 3 } },
+    { "id": "s4", "name": "Майор 4", "base": "MajorGeneral", "skills": { "Skill_IncreaseCapacity": 3 } },
+    { "id": "s5", "name": "Генерал 5", "base": "General", "skills": { "Skill_IncreaseCapacity": 3 } },
+    { "id": "s6", "name": "Генерал 6", "base": "General", "skills": { "Skill_IncreaseCapacity": 3 } },
+    { "id": "s7", "name": "Генерал 7", "base": "General", "skills": { "Skill_IncreaseCapacity": 3 } },
+    { "id": "s8", "name": "Генерал 8", "base": "General", "skills": { "Skill_IncreaseCapacity": 3 } }
+  ]
+}

@@ -1,0 +1,162 @@
+{
+  "specialists": [
+    {
+      "id": "g1",
+      "name": "Безумный 2",
+      "base": "MadScientistGeneral",
+      "skills": {}
+    },
+    {
+      "id": "g2",
+      "name": "Безумный 1",
+      "base": "MadScientistGeneral",
+      "skills": {}
+    },
+    {
+      "id": "g3",
+      "name": "Медик",
+      "base": "MedicGeneral",
+      "skills": {}
+    },
+    {
+      "id": "g4",
+      "name": "Мастер зашиты",
+      "base": "StarGeneral2",
+      "skills": {}
+    },
+    {
+      "id": "g5",
+      "name": "Мастер Защиты 2",
+      "base": "StarGeneral2",
+      "skills": {}
+    },
+    {
+      "id": "g6",
+      "name": "Шелкучник",
+      "base": "NutcrackerGeneral",
+      "skills": {}
+    },
+    {
+      "id": "g7",
+      "name": "Сильвана",
+      "base": "SylvanaGeneral",
+      "skills": {}
+    },
+    {
+      "id": "g8",
+      "name": "Хуан",
+      "base": "GeneralJuan",
+      "skills": {}
+    },
+    {
+      "id": "g9",
+      "name": "Ветеран 2",
+      "base": "EasterGeneral",
+      "skills": {}
+    },
+    {
+      "id": "g10",
+      "name": "Ветеран 1",
+      "base": "EasterGeneral",
+      "skills": {}
+    },
+    {
+      "id": "g11",
+      "name": "Майор 2",
+      "base": "MajorGeneral",
+      "skills": {}
+    },
+    {
+      "id": "g12",
+      "name": "Майор 1",
+      "base": "MajorGeneral",
+      "skills": {}
+    },
+    {
+      "id": "g13",
+      "name": "Младший 1",
+      "base": "Halloween2019General",
+      "skills": {}
+    },
+    {
+      "id": "g14",
+      "name": "Младший 2",
+      "base": "Halloween2019General",
+      "skills": {
+        "Skill_IncreaseCapacity": 3
+      }
+    },
+    {
+      "id": "g15",
+      "name": "Решительный",
+      "base": "ResoluteGeneral",
+      "skills": {
+        "Skill_IncreaseCapacity": 3
+      }
+    },
+    {
+      "id": "g16",
+      "name": "Призрачный",
+      "base": "GhostGeneral",
+      "skills": {
+        "Skill_IncreaseCapacity": 3
+      }
+    },
+    {
+      "id": "g17",
+      "name": "Призрачный 2",
+      "base": "GhostGeneral",
+      "skills": {
+        "Skill_IncreaseCapacity": 3
+      }
+    },
+    {
+      "id": "g18",
+      "name": "Призрачный 3",
+      "base": "GhostGeneral",
+      "skills": {
+        "Skill_IncreaseCapacity": 3
+      }
+    },
+    {
+      "id": "g19",
+      "name": "Нарцис",
+      "base": "NarcissisticGeneral",
+      "skills": {
+        "Skill_IncreaseCapacity": 3
+      }
+    },
+    {
+      "id": "g20",
+      "name": "Скрытый",
+      "base": "AssassinGeneral",
+      "skills": {}
+    },
+    {
+      "id": "g21",
+      "name": "Master",
+      "base": "StarGeneral3",
+      "skills": {
+        "Skill_IncreaseCapacity": 3
+      }
+    },
+    {
+      "id": "g22",
+      "name": "Miss Chris",
+      "base": "GeneralMary",
+      "skills": {}
+    },
+    {
+      "id": "g23",
+      "name": "General",
+      "base": "General",
+      "skills": {}
+    }
+  ],
+  "unitValues": {
+    "MountedSwordsman": 100,
+    "Knight": 100,
+    "MountedMarksman": 100,
+    "Besieger": 100
+  }
+}
