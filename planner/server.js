@@ -34,6 +34,12 @@ const server = http.createServer(async (req, res) => {
     if (req.method === 'GET' && url.pathname === '/app.js') {
       return send(res, 200, fs.readFileSync(path.join(UI_DIR, 'app.js')), 'text/javascript; charset=utf-8');
     }
+    if (req.method === 'GET' && url.pathname === '/i18n.js') {
+      return send(res, 200, fs.readFileSync(path.join(UI_DIR, 'i18n.js')), 'text/javascript; charset=utf-8');
+    }
+    if (req.method === 'GET' && (url.pathname === '/favicon.svg' || url.pathname === '/favicon.ico')) {
+      return send(res, 200, fs.readFileSync(path.join(UI_DIR, 'favicon.svg')), 'image/svg+xml');
+    }
     if (req.method === 'GET' && url.pathname === '/api/meta') {
       return send(res, 200, {
         adventures: listAdventures(),

@@ -1,9 +1,11 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>TSO Adventure Planner — Tactical Engine</title>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="alternate icon" href="/favicon.ico">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -112,6 +114,48 @@
     border: 1px solid rgba(59, 130, 246, 0.3);
     padding: 2px 8px;
     border-radius: var(--radius-full);
+  }
+
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  /* Language Switcher */
+  .lang-switcher {
+    display: inline-flex;
+    align-items: center;
+    background: var(--bg-inset);
+    padding: 3px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-subtle);
+    gap: 2px;
+  }
+
+  .lang-btn {
+    background: transparent;
+    border: 0;
+    color: var(--text-muted);
+    padding: 4px 9px;
+    font-size: 11px;
+    font-weight: 700;
+    font-family: 'Geist Mono', monospace;
+    letter-spacing: 0.04em;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    user-select: none;
+  }
+
+  .lang-btn:hover {
+    color: var(--text-main);
+  }
+
+  .lang-btn.active {
+    background: var(--accent);
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4);
   }
 
   /* Mobile Tabs Switcher */
@@ -1350,31 +1394,40 @@
       </svg>
     </div>
     <h1>
-      <span>TSO Adventure Planner</span>
-      <span class="header-badge">WASM Engine</span>
+      <span data-i18n="app.title">TSO Adventure Planner</span>
+      <span class="header-badge" data-i18n="app.badge">WASM Engine</span>
     </h1>
   </div>
 
-  <!-- Mobile View Switcher -->
-  <div class="mobile-nav-tabs">
-    <button class="mobile-tab-btn active" id="tabBtnParams">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <circle cx="12" cy="12" r="3"></circle>
-        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-      </svg>
-      Параметры
-    </button>
-    <button class="mobile-tab-btn" id="tabBtnResults">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path>
-        <polyline points="14 2 14 8 20 8"></polyline>
-        <line x1="16" y1="13" x2="8" y2="13"></line>
-        <line x1="16" y1="17" x2="8" y2="17"></line>
-        <line x1="10" y1="9" x2="8" y2="9"></line>
-      </svg>
-      Результат
-      <span class="tab-count-badge font-mono" id="mobileWaveCount">0</span>
-    </button>
+  <div class="header-actions">
+    <!-- Language Switcher -->
+    <div class="lang-switcher" id="langSwitcher" role="group" aria-label="Language selector">
+      <button type="button" class="lang-btn active" data-lang="en">EN</button>
+      <button type="button" class="lang-btn" data-lang="uk">UA</button>
+      <button type="button" class="lang-btn" data-lang="ru">RU</button>
+    </div>
+
+    <!-- Mobile View Switcher -->
+    <div class="mobile-nav-tabs">
+      <button class="mobile-tab-btn active" id="tabBtnParams">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="3"></circle>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+        </svg>
+        <span data-i18n="nav.params">Parameters</span>
+      </button>
+      <button class="mobile-tab-btn" id="tabBtnResults">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path>
+          <polyline points="14 2 14 8 20 8"></polyline>
+          <line x1="16" y1="13" x2="8" y2="13"></line>
+          <line x1="16" y1="17" x2="8" y2="17"></line>
+          <line x1="10" y1="9" x2="8" y2="9"></line>
+        </svg>
+        <span data-i18n="nav.results">Results</span>
+        <span class="tab-count-badge font-mono" id="mobileWaveCount">0</span>
+      </button>
+    </div>
   </div>
 </header>
 
@@ -1389,7 +1442,7 @@
           <circle cx="12" cy="12" r="10"></circle>
           <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon>
         </svg>
-        Лагеря
+        <span data-i18n="tab.camps">Camps</span>
         <span class="side-tab-badge font-mono" id="sideBadgeCamps">0</span>
       </button>
 
@@ -1398,7 +1451,7 @@
           <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
           <circle cx="9" cy="7" r="4"></circle>
         </svg>
-        Генералы
+        <span data-i18n="tab.generals">Generals</span>
         <span class="side-tab-badge font-mono" id="sideBadgeGenerals">0</span>
       </button>
 
@@ -1406,7 +1459,7 @@
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
         </svg>
-        Войска
+        <span data-i18n="tab.troops">Troops</span>
       </button>
 
       <button class="side-tab-btn" data-tab="settings">
@@ -1414,7 +1467,7 @@
           <circle cx="12" cy="12" r="3"></circle>
           <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
         </svg>
-        Точность
+        <span data-i18n="tab.settings">Accuracy</span>
       </button>
     </div>
 
@@ -1430,9 +1483,9 @@
                 <circle cx="12" cy="12" r="10"></circle>
                 <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon>
               </svg>
-              Приключение
+              <span data-i18n="pane.camps.title">Adventure</span>
             </div>
-            <button class="sec sm" id="advReload" title="Обновить список приключений">
+            <button class="sec sm" id="advReload" title="Reload adventure list" data-i18n-title="pane.camps.reload">
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <polyline points="23 4 23 10 17 10"></polyline>
                 <polyline points="1 20 1 14 7 14"></polyline>
@@ -1448,24 +1501,24 @@
           <div class="dim" id="advDir" style="font-size:11px; margin-bottom:6px;"></div>
 
           <div class="type-legend">
-            <span class="type-legend-item"><span class="legend-dot" style="background:#10b981;"></span> малый</span>
-            <span class="type-legend-item"><span class="legend-dot" style="background:#3b82f6;"></span> средний</span>
-            <span class="type-legend-item"><span class="legend-dot" style="background:#f59e0b;"></span> большой</span>
-            <span class="type-legend-item"><span class="legend-dot" style="background:#ef4444;"></span> босс</span>
+            <span class="type-legend-item"><span class="legend-dot" style="background:#10b981;"></span> <span data-i18n="camp.legend.small">small</span></span>
+            <span class="type-legend-item"><span class="legend-dot" style="background:#3b82f6;"></span> <span data-i18n="camp.legend.medium">medium</span></span>
+            <span class="type-legend-item"><span class="legend-dot" style="background:#f59e0b;"></span> <span data-i18n="camp.legend.large">large</span></span>
+            <span class="type-legend-item"><span class="legend-dot" style="background:#ef4444;"></span> <span data-i18n="camp.legend.boss">boss</span></span>
           </div>
 
           <div id="campBtns" class="campgrid font-mono"></div>
 
           <div class="row between" style="margin-top:8px;">
-            <button class="sec sm" id="campAll">Все по порядку</button>
-            <button class="sec sm" id="campClear">Очистить</button>
+            <button class="sec sm" id="campAll" data-i18n="pane.camps.all">All in order</button>
+            <button class="sec sm" id="campClear" data-i18n="pane.camps.clear">Clear</button>
           </div>
         </div>
 
         <div class="panel-card">
           <div class="row between" style="margin:0 0 6px 0;">
-            <label style="font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--text-dim); font-weight:700;">Очередь атаки</label>
-            <span class="dim font-mono" id="queueCount" style="font-size:11px;">0 выбрано</span>
+            <label style="font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--text-dim); font-weight:700;" data-i18n="pane.camps.queueTitle">Attack queue</label>
+            <span class="dim font-mono" id="queueCount" style="font-size:11px;">0 selected</span>
           </div>
           
           <div class="queue-container">
@@ -1473,9 +1526,9 @@
           </div>
 
           <details style="margin-top:6px;">
-            <summary class="dim" style="font-size:11px; cursor:pointer; user-select:none;">Ввести номера вручную</summary>
+            <summary class="dim" style="font-size:11px; cursor:pointer; user-select:none;" data-i18n="pane.camps.manual">Enter camp numbers manually</summary>
             <div class="row" style="margin-top:6px;">
-              <input type="text" id="camps" placeholder="например: 1, 2, 3, 4, 5">
+              <input type="text" id="camps" placeholder="e.g.: 1, 2, 3, 4, 5" data-i18n-placeholder="pane.camps.manualPlaceholder">
             </div>
           </details>
         </div>
@@ -1490,11 +1543,11 @@
                 <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
                 <circle cx="9" cy="7" r="4"></circle>
               </svg>
-              Загрузка генералов
+              <span data-i18n="pane.gen.title">Generals Setup</span>
             </div>
             <div class="row gap-sm" style="margin:0;">
-              <button class="sec sm" id="genAll">Все</button>
-              <button class="sec sm" id="genNone">Никого</button>
+              <button class="sec sm" id="genAll" data-i18n="pane.gen.all">All</button>
+              <button class="sec sm" id="genNone" data-i18n="pane.gen.none">None</button>
             </div>
           </div>
 
@@ -1506,8 +1559,11 @@
                 <polyline points="17 8 12 3 7 8"></polyline>
                 <line x1="12" y1="3" x2="12" y2="15"></line>
               </svg>
-              <span><b>Файл экспорта</b> tsowiki-generals.json</span>
+              <span><b data-i18n="pane.gen.dropText">Generals export file (.json)</b></span>
             </div>
+          </div>
+          <div style="font-size:11px; color:var(--text-muted); margin:-4px 0 10px 0; line-height:1.4;" data-i18n="pane.gen.dropHint" data-i18n-html="true">
+            💡 Export file from simulator at <a href="https://tsowiki.eu/simulator/" target="_blank" rel="noopener" style="color:#60a5fa; text-decoration:underline;">tsowiki.eu/simulator</a> (section «Generals» &rarr; «Export»).
           </div>
 
           <div class="input-search-wrap">
@@ -1515,21 +1571,21 @@
               <circle cx="11" cy="11" r="8"></circle>
               <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
             </svg>
-            <input type="text" id="genSearch" placeholder="Поиск генерала...">
+            <input type="text" id="genSearch" placeholder="Search general..." data-i18n-placeholder="pane.gen.searchPlaceholder">
           </div>
 
           <div class="table-wrap">
             <table id="genTable">
               <thead>
                 <tr>
-                  <th style="width:34px;">Исп.</th>
-                  <th>Имя</th>
-                  <th>Тип</th>
-                  <th style="width:50px; text-align:right;">Вмест.</th>
+                  <th style="width:34px;" data-i18n="gen.th.use">Use</th>
+                  <th data-i18n="gen.th.name">Name</th>
+                  <th data-i18n="gen.th.type">Type</th>
+                  <th style="width:50px; text-align:right;" data-i18n="gen.th.capacity">Cap.</th>
                 </tr>
               </thead>
               <tbody>
-                <tr><td colspan="4" class="dim" style="text-align:center; padding:16px;">Загрузите файл экспорта генералов</td></tr>
+                <tr><td colspan="4" class="dim" style="text-align:center; padding:16px;" data-i18n="gen.table.empty" data-i18n-html="true">Load generals export file from <a href="https://tsowiki.eu/simulator/" target="_blank" rel="noopener" style="color:#60a5fa; text-decoration:underline;">tsowiki.eu/simulator</a></td></tr>
               </tbody>
             </table>
           </div>
@@ -1545,11 +1601,11 @@
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
               </svg>
-              Войска и склад
+              <span data-i18n="pane.troops.title">Troops & Stock</span>
             </div>
             <div class="row gap-sm" style="margin:0;">
-              <button class="sec sm" id="presetElite">Элитные</button>
-              <button class="sec sm" id="presetAll">Все</button>
+              <button class="sec sm" id="presetElite" data-i18n="pane.troops.presetElite">Elite</button>
+              <button class="sec sm" id="presetAll" data-i18n="pane.troops.presetAll">All</button>
             </div>
           </div>
 
@@ -1557,23 +1613,23 @@
             <table id="unitTable">
               <thead>
                 <tr>
-                  <th>Юнит</th>
-                  <th style="width:36px; text-align:center;">Исп.</th>
+                  <th data-i18n="unit.th.unit">Unit</th>
+                  <th style="width:36px; text-align:center;" data-i18n="unit.th.use">Use</th>
                   <th style="width:80px; text-align:center;">
                     <span class="has-tooltip">
-                      <span>Без потерь</span>
+                      <span data-i18n="unit.th.noLoss">No Loss</span>
                       <span class="tooltip-popover pos-right">
-                        <strong>Режим «Без потерь» (noLoss)</strong>
-                        <span>Строго защищает юнита от любых потерь. Юнит никогда не попадёт во вскрывающую/жертвенную волну и будет использоваться только при гарантированной 100% победе с 0 потерь.</span>
+                        <strong data-i18n="unit.tooltip.noLoss.title">«No Loss» Mode (noLoss)</strong>
+                        <span data-i18n="unit.tooltip.noLoss.body">Strictly protects this unit from any loss. The unit will never be used in a sacrificial opener wave and will only be deployed for guaranteed 100% victories with 0 losses.</span>
                       </span>
                     </span>
                   </th>
                   <th style="width:75px; text-align:right;">
                     <span class="has-tooltip">
-                      <span>Склад</span>
+                      <span data-i18n="unit.th.stock">Stock</span>
                       <span class="tooltip-popover pos-right">
-                        <strong>Лимит склада войск</strong>
-                        <span>Максимальное количество юнитов, доступных суммарно для всех генералов одной волны. Пустое поле = без ограничений.</span>
+                        <strong data-i18n="unit.tooltip.stock.title">Troop Stock Limit</strong>
+                        <span data-i18n="unit.tooltip.stock.body">Maximum number of units available in total across all generals in a single wave. Empty field = unlimited.</span>
                       </span>
                     </span>
                   </th>
@@ -1593,81 +1649,79 @@
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
               </svg>
-              Параметры алгоритма
+              <span data-i18n="pane.settings.title">Algorithm Settings</span>
             </div>
           </div>
 
           <div class="setting-group">
             <div class="setting-label-row">
               <span class="has-tooltip">
-                <label>Режим генералов</label>
+                <label data-i18n="settings.genUsage.label">General usage mode</label>
                 <span class="tooltip-icon" tabindex="0">
                   <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
                 </span>
                 <span class="tooltip-popover">
-                  <strong>Режим использования генералов</strong>
-                  <span><b>Максимум</b>: главная цель — уничтожить максимум лагерей за 1 волну и сократить волны во всём приключении (например, уложиться в 2 волны). На лёгких лагерях экономятся генералы (соло), а на сложных используются отряды.</span>
-                  <span class="tooltip-why"><b>Минимум</b>: главная цель — максимальное сбережение генералов и войск без раздувания волны.</span>
+                  <strong data-i18n="settings.genUsage.tooltipTitle">General Usage Strategy</strong>
+                  <span data-i18n="settings.genUsage.tooltipMax" data-i18n-html="true"><b>Maximum (speed)</b>: primary goal is to clear the maximum number of camps in a single wave to minimize total waves in the adventure. Solos easy camps and squads hard camps.</span>
+                  <span class="tooltip-why" data-i18n="settings.genUsage.tooltipMin" data-i18n-html="true"><b>Minimum (conserve)</b>: primary goal is to preserve generals and troops without inflating wave sizes.</span>
                 </span>
               </span>
             </div>
             <div class="segmented-control" id="ctrlGenUsage">
-              <button class="segmented-btn active" data-val="min">Минимум (беречь)</button>
-              <button class="segmented-btn" data-val="max">Максимум (пройти)</button>
+              <button class="segmented-btn active" data-val="min" data-i18n="settings.genUsage.min">Minimum (conserve)</button>
+              <button class="segmented-btn" data-val="max" data-i18n="settings.genUsage.max">Maximum (speed)</button>
             </div>
           </div>
 
           <div class="setting-group">
             <div class="setting-label-row">
               <span class="has-tooltip">
-                <label>Списание потерь со склада</label>
+                <label data-i18n="settings.lossAcc.label">Stock loss accounting</label>
                 <span class="tooltip-icon" tabindex="0">
                   <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
                 </span>
                 <span class="tooltip-popover">
-                  <strong>Списание потерь со склада</strong>
-                  <span><b>По худшему (max)</b>: списывает максимальный урон из всех прогонов симулятора. Гарантирует, что армия не останется без войск при неудачном рандоме.</span>
-                  <span class="tooltip-why"><b>По среднему (avg)</b>: списывает среднее матожидание потерь.</span>
+                  <strong data-i18n="settings.lossAcc.tooltipTitle">Stock Loss Accounting</strong>
+                  <span data-i18n="settings.lossAcc.tooltipMax" data-i18n-html="true"><b>Worst-case (max)</b>: deducts maximum damage observed across all simulation runs. Guarantees the army will never run out of troops due to bad RNG.</span>
+                  <span class="tooltip-why" data-i18n="settings.lossAcc.tooltipAvg" data-i18n-html="true"><b>Average (avg)</b>: deducts expected statistical average losses.</span>
                 </span>
               </span>
             </div>
             <div class="segmented-control" id="ctrlLossAcc">
-              <button class="segmented-btn active" data-val="max">По худшему (max)</button>
-              <button class="segmented-btn" data-val="avg">По среднему (avg)</button>
+              <button class="segmented-btn active" data-val="max" data-i18n="settings.lossAcc.max">Worst-case (max)</button>
+              <button class="segmented-btn" data-val="avg" data-i18n="settings.lossAcc.avg">Average (avg)</button>
             </div>
           </div>
 
           <div class="setting-group">
             <div class="setting-label-row">
               <span class="has-tooltip">
-                <label>Жертвенные армии (вскрытие)</label>
+                <label data-i18n="settings.sacrifice.label">Sacrificial armies (opener)</label>
                 <span class="tooltip-icon" tabindex="0">
                   <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
                 </span>
                 <span class="tooltip-popover">
-                  <strong>Жертвенные армии</strong>
-                  <span><b>Дешёвые</b>: разрешает жертвовать на вскрытии только дешёвыми войсками (Новобранцы, Ополчение, Мечники, Рыцари). Юниты «без потерь» запрещены.</span>
-                  <span class="tooltip-why"><b>Любые</b>: разрешает любые незащищённые войска. <b>Запретить</b>: запрещает атаки с гибелью армии.</span>
+                  <strong data-i18n="settings.sacrifice.tooltipTitle">Sacrificial Armies</strong>
+                  <span data-i18n="settings.sacrifice.tooltipBody" data-i18n-html="true"><b>Cheap</b>: only allows sacrificing cheap units (Recruits, Militia, Swordsmen, Knights). Units marked «no loss» are strictly forbidden.<br><br><b>Any</b>: allows any unprotected units.<br><br><b>Disable</b>: forbids attacks resulting in army wipeouts.</span>
                 </span>
               </span>
             </div>
             <div class="segmented-control" id="ctrlSacrifice">
-              <button class="segmented-btn active" data-val="cheap">Дешёвые</button>
-              <button class="segmented-btn" data-val="any">Любые</button>
-              <button class="segmented-btn" data-val="none">Запретить</button>
+              <button class="segmented-btn active" data-val="cheap" data-i18n="settings.sacrifice.cheap">Cheap</button>
+              <button class="segmented-btn" data-val="any" data-i18n="settings.sacrifice.any">Any</button>
+              <button class="segmented-btn" data-val="none" data-i18n="settings.sacrifice.none">Disable</button>
             </div>
           </div>
 
           <div class="row between" style="margin-top:10px;">
             <span class="has-tooltip">
-              <label for="step">Шаг состава (%)</label>
+              <label for="step" data-i18n="settings.step.label">Composition step (%)</label>
               <span class="tooltip-icon" tabindex="0">
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
               </span>
               <span class="tooltip-popover">
-                <strong>Шаг сетки состава (%)</strong>
-                <span>Шаг перебора долей войск в армии генерала. Например, 10% перебирает состав с шагом 10%, 20%, 30%...</span>
-                <span class="tooltip-why">10% — оптимальный баланс высокой точности и скорости.</span>
+                <strong data-i18n="settings.step.tooltipTitle">Composition Grid Step (%)</strong>
+                <span data-i18n="settings.step.tooltipBody" data-i18n-html="true">Step size when iterating troop ratios in generals' armies. For example, 10% tests compositions in increments of 10%, 20%, 30%...<br><br>10% offers the optimal balance of precision and speed.</span>
               </span>
             </span>
             <input class="num font-mono" type="number" id="step" value="10" min="1" max="50">
@@ -1675,13 +1729,13 @@
 
           <div class="row between">
             <span class="has-tooltip">
-              <label for="reps">Прогонов (отбор)</label>
+              <label for="reps" data-i18n="settings.reps.label">Screening reps</label>
               <span class="tooltip-icon" tabindex="0">
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
               </span>
               <span class="tooltip-popover">
-                <strong>Прогонов при отборе</strong>
-                <span>Количество симуляций боя при первичном скрининге кандидатов. Быстро отсеивает нежизнеспособные составы.</span>
+                <strong data-i18n="settings.reps.tooltipTitle">Screening Simulations</strong>
+                <span data-i18n="settings.reps.tooltipBody">Number of battle simulations during candidate screening. Quickly eliminates unviable compositions.</span>
               </span>
             </span>
             <input class="num font-mono" type="number" id="reps" value="60">
@@ -1689,13 +1743,13 @@
 
           <div class="row between">
             <span class="has-tooltip">
-              <label for="verify">Прогонов (проверка)</label>
+              <label for="verify" data-i18n="settings.verify.label">Verification reps</label>
               <span class="tooltip-icon" tabindex="0">
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
               </span>
               <span class="tooltip-popover">
-                <strong>Прогонов при проверке</strong>
-                <span>Количество проверочных симуляций финальной победной армии для гарантии 100% победы и отсутствия скрытых шансов проиграть.</span>
+                <strong data-i18n="settings.verify.tooltipTitle">Verification Simulations</strong>
+                <span data-i18n="settings.verify.tooltipBody">Number of verification simulations on the final winning army to guarantee 100% win rate and eliminate hidden defeat chances.</span>
               </span>
             </span>
             <input class="num font-mono" type="number" id="verify" value="400">
@@ -1703,28 +1757,28 @@
 
           <div class="row between">
             <span class="has-tooltip">
-              <label for="maxGen">Макс. генералов на лагерь</label>
+              <label for="maxGen" data-i18n="settings.maxGen.label">Max generals per camp</label>
               <span class="tooltip-icon" tabindex="0">
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
               </span>
               <span class="tooltip-popover">
-                <strong>Макс. генералов в отряде</strong>
-                <span>Ограничение размера цепочки генералов на один лагерь. 0 = без ограничений (сколько необходимо для взятия лагеря).</span>
+                <strong data-i18n="settings.maxGen.tooltipTitle">Max Generals in Squad</strong>
+                <span data-i18n="settings.maxGen.tooltipBody">Limit the length of a general squad chain per camp. 0 = unlimited (as many as needed to clear the camp).</span>
               </span>
             </span>
             <input class="num font-mono" type="number" id="maxGen" value="0" min="0" max="20">
           </div>
-          <div class="dim" style="font-size:11px; margin:-4px 0 6px;">0 = без лимита (все генералы)</div>
+          <div class="dim" style="font-size:11px; margin:-4px 0 6px;" data-i18n="settings.maxGen.hint">0 = no limit (all generals)</div>
           
           <div class="row between">
             <span class="has-tooltip">
-              <label for="beam">Ширина луча (beam)</label>
+              <label for="beam" data-i18n="settings.beam.label">Beam width</label>
               <span class="tooltip-icon" tabindex="0">
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
               </span>
               <span class="tooltip-popover">
-                <strong>Ширина лучевого поиска</strong>
-                <span>Количество лучших промежуточных армий, которые передаются на следующий этап составления отряда. Больше = шире поиск.</span>
+                <strong data-i18n="settings.beam.tooltipTitle">Beam Search Width</strong>
+                <span data-i18n="settings.beam.tooltipBody">Number of best candidate armies retained for the next squad stage. Higher = wider and deeper search.</span>
               </span>
             </span>
             <input class="num font-mono" type="number" id="beam" value="5" min="2" max="20">
@@ -1733,13 +1787,13 @@
           <div class="row" style="margin-top:10px;">
             <input type="checkbox" id="chain">
             <span class="has-tooltip">
-              <label for="chain" style="cursor:pointer; font-size:12px;">Одна армия берёт лагеря подряд (цепочка)</label>
+              <label for="chain" style="cursor:pointer; font-size:12px;" data-i18n="settings.chain.label">Single army clears camps in sequence (chain)</label>
               <span class="tooltip-icon" tabindex="0">
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
               </span>
               <span class="tooltip-popover">
-                <strong>Цепочка атак одним генералом</strong>
-                <span>Генерал с одной армией последовательно зачищает несколько лагерей подряд, сохраняя выживших юнитов от боя к бою.</span>
+                <strong data-i18n="settings.chain.tooltipTitle">General Attack Chain</strong>
+                <span data-i18n="settings.chain.tooltipBody">A general with a single army sequentially defeats multiple camps, keeping surviving troops from battle to battle.</span>
               </span>
             </span>
           </div>
@@ -1752,13 +1806,13 @@
     <div class="sidebar-dock">
       <div class="dock-summary font-mono">
         <span id="dockAdvLabel">—</span>
-        <span>Очередь: <b id="dockQueueCount">0</b> лаг.</span>
+        <span id="dockQueueSummary">Queue: <b id="dockQueueCount">0</b> camps</span>
       </div>
       <button class="btn-primary-large" id="run">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
           <polygon points="5 3 19 12 5 21 5 3"></polygon>
         </svg>
-        Рассчитать план волн
+        <span data-i18n="dock.run">Calculate wave plan</span>
       </button>
     </div>
 
@@ -1774,21 +1828,21 @@
           <polyline points="2 12 12 17 22 12"></polyline>
         </svg>
       </div>
-      <h3 style="font-size:16px; font-weight:700; color:var(--text-main);">Готов к расчёту тактики</h3>
-      <p style="font-size:13px; max-width:420px;">Выберите лагеря во вкладке «Лагеря», настройте генералов и нажмите «Рассчитать план волн».</p>
+      <h3 style="font-size:16px; font-weight:700; color:var(--text-main);" data-i18n="empty.title">Ready for tactical calculation</h3>
+      <p style="font-size:13px; max-width:480px; color:var(--text-muted); line-height:1.5;" data-i18n="empty.desc" data-i18n-html="true">Unlike typical single-camp calculators, here you do not need to solve each camp individually: the system pools all generals and automatically assigns them across <b>all selected camps</b> at once.</p>
       
       <div class="empty-state-steps">
         <div class="empty-step">
           <div class="empty-step-num font-mono">1</div>
-          <span>Загрузите файл экспорта генералов во вкладке <b>Генералы</b></span>
+          <span data-i18n="empty.step1" data-i18n-html="true">In the <b>Generals</b> tab, upload your JSON export file (exported from simulator at <a href="https://tsowiki.eu/simulator/" target="_blank" rel="noopener" style="color:#60a5fa; text-decoration:underline;">tsowiki.eu/simulator</a>)</span>
         </div>
         <div class="empty-step">
           <div class="empty-step-num font-mono">2</div>
-          <span>Кликните по лагерям на карте во вкладке <b>Лагеря</b></span>
+          <span data-i18n="empty.step2" data-i18n-html="true">Select target camps in the <b>Camps</b> tab (single camp, sector, or the full adventure)</span>
         </div>
         <div class="empty-step">
           <div class="empty-step-num font-mono">3</div>
-          <span>Получите 100% надёжный план боя с разбивкой на волны</span>
+          <span data-i18n="empty.step3" data-i18n-html="true">Click <b>«Calculate wave plan»</b> to receive a complete, ready-to-use wave schedule</span>
         </div>
       </div>
     </div>
@@ -1798,17 +1852,18 @@
 <!-- Mobile Sticky Bottom Action Bar -->
 <div class="mobile-bottom-bar" id="mobileActionBar">
   <div class="mobile-bottom-info">
-    <div>Лагерей в очереди: <b class="font-mono" id="mobileQueueCount">0</b></div>
+    <div id="mobileQueueText">Camps in queue: <b class="font-mono" id="mobileQueueCount">0</b></div>
     <div class="dim font-mono" id="mobileAdventureName">—</div>
   </div>
   <button id="runMobile" style="padding:10px 18px; font-weight:700; border-radius:var(--radius-sm);">
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
       <polygon points="5 3 19 12 5 21 5 3"></polygon>
     </svg>
-    Рассчитать
+    <span data-i18n="mobile.run">Calculate</span>
   </button>
 </div>
 
+<script src="/i18n.js"></script>
 <script src="/app.js"></script>
 </body>
 </html>

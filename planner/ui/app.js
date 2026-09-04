@@ -1,3 +1,30 @@
+(() => {
+const {
+  t,
+  tUnit,
+  tCampType,
+  tRole,
+  tReason,
+  setLanguage,
+  onLanguageChange,
+  updatePageTranslations,
+  updateLanguageSwitcherUI,
+} = window.I18N_ENGINE || {
+  t: (k, params = {}) => {
+    let s = k;
+    for (const [p, v] of Object.entries(params)) s = s.replaceAll(`{${p}}`, v);
+    return s;
+  },
+  tUnit: (u) => u,
+  tCampType: (tp) => tp,
+  tRole: (r) => r,
+  tReason: (rs) => rs,
+  setLanguage: () => {},
+  onLanguageChange: () => {},
+  updatePageTranslations: () => {},
+  updateLanguageSwitcherUI: () => {},
+};
+
 const S = {
   get(k, d) {
     try {
@@ -31,13 +58,18 @@ const $ = (id) => document.getElementById(id);
 async function loadMeta() {
   META = await (await fetch('/api/meta')).json();
   const prev = $('adv').value || S.get('adventure', null);
+  updateAdventureSelect(prev);
+  updateDockSummary();
+}
+
+function updateAdventureSelect(selectedId = null) {
+  if (!META || !META.adventures) return;
+  const prev = selectedId || ($('adv') ? $('adv').value : null) || S.get('adventure', null);
   $('adv').innerHTML = META.adventures
-    .map((a) => `<option value="${a.id}">${a.id} (${a.camps} лаг.)</option>`)
+    .map((a) => `<option value="${a.id}">${a.id} (${t('camp.suffix', { camps: a.camps })})</option>`)
     .join('');
   const ids = META.adventures.map((a) => a.id);
   $('adv').value = ids.includes(prev) ? prev : (ids[0] || '');
-  
-  updateDockSummary();
 }
 
 function updateDockSummary() {
@@ -80,6 +112,35 @@ async function init() {
 
   const saved = S.get('generalsExport', null);
   if (saved) await applyGeneralsExport(saved);
+
+  // Language Switcher binding
+  document.querySelectorAll('.lang-btn').forEach((btn) => {
+    btn.onclick = () => {
+      setLanguage(btn.dataset.lang);
+    };
+  });
+
+  // Re-render views when language changes
+  onLanguageChange(() => {
+    updateAdventureSelect();
+    renderCampButtons();
+    renderQueue();
+    renderUnits();
+    if (GENERALS.length) {
+      $('genHint').innerHTML = t('gen.hint.loaded', { count: GENERALS.length });
+      filterGenerals($('genSearch') ? $('genSearch').value : '');
+    } else {
+      const tbody = $('genTable').querySelector('tbody');
+      if (tbody) tbody.innerHTML = `<tr><td colspan="4" class="dim" style="text-align:center; padding:16px;">${t('gen.table.empty')}</td></tr>`;
+    }
+    if (LAST_PLAN_RESULT) {
+      renderResult(LAST_PLAN_RESULT);
+    }
+  });
+
+  // Apply active translations on startup
+  updateLanguageSwitcherUI();
+  updatePageTranslations();
 
   // Sidebar Sub-tab switching
   document.querySelectorAll('.side-tab-btn').forEach((btn) => {
@@ -161,7 +222,7 @@ async function init() {
       S.set('generalsExport', data);
       await applyGeneralsExport(data);
     } catch (err) {
-      alert('Ошибка чтения JSON генералов: ' + err.message);
+      alert(t('toast.jsonError', { err: err.message }));
     }
   };
 
@@ -238,12 +299,19 @@ function campKind(type) {
 
 function renderCampButtons() {
   $('campBtns').innerHTML = (window.CAMPS || []).map((c) => {
-    const enemy = c.units.map((u) => `${u.amount} ${u.id}`).join(', ');
+    const enemy = c.units.map((u) => `${u.amount} ${tUnit(u.id)}`).join(', ');
     const total = c.units.reduce((s, u) => s + u.amount, 0);
     const pos = QUEUE.indexOf(c.number);
     const isQueued = pos >= 0;
+    const tip = t('camp.tooltip', {
+      num: c.number,
+      sector: c.sector,
+      type: tCampType(c.type),
+      total,
+      enemies: enemy,
+    });
     return `<button class="camp ${campKind(c.type)}${isQueued ? ' queued' : ''}" data-n="${c.number}"` +
-      ` title="Лагерь ${c.number} (Сектор ${c.sector}, ${c.type})\nВрагов (${total}): ${enemy}">` +
+      ` title="${tip}">` +
       `<span>${c.number}</span>` +
       `${isQueued ? `<span class="camp-order-badge">${pos + 1}</span>` : ''}` +
       `</button>`;
@@ -252,20 +320,22 @@ function renderCampButtons() {
 
 function renderQueue() {
   const count = QUEUE.length;
-  if ($('queueCount')) $('queueCount').textContent = `${count} выбрано`;
+  if ($('queueCount')) $('queueCount').textContent = t('pane.camps.selected', { count });
   if ($('sideBadgeCamps')) $('sideBadgeCamps').textContent = count;
   if ($('dockQueueCount')) $('dockQueueCount').textContent = count;
+  if ($('dockQueueSummary')) $('dockQueueSummary').innerHTML = t('dock.queue', { count });
   if ($('mobileQueueCount')) $('mobileQueueCount').textContent = count;
+  if ($('mobileQueueText')) $('mobileQueueText').innerHTML = t('mobile.queue', { count });
 
   $('campQueue').innerHTML = count
     ? QUEUE.map((n, i) => `
-        <span class="qchip" data-n="${n}" title="Удалить из очереди">
+        <span class="qchip" data-n="${n}" title="${t('pane.camps.clear')}">
           <span>${i + 1}.</span>
           <b>${n}</b>
           <span class="qchip-close">✕</span>
         </span>
       `).join('')
-    : '<span class="dim" style="font-size:11px; padding:4px;">Очередь пуста — нажмите лагеря выше</span>';
+    : `<span class="dim" style="font-size:11px; padding:4px;">${t('pane.camps.queueEmpty')}</span>`;
 }
 
 function syncQueue(writeInput = true) {
@@ -308,11 +378,15 @@ function renderUnits() {
   
   tbody.innerHTML = (META.allUnits || []).map((u) => {
     const isElite = ELITE_UNITS.includes(u);
+    const localizedName = tUnit(u);
+    const displayName = localizedName !== u
+      ? `${localizedName} <span class="dim" style="font-size:11px; font-weight:400;">(${u})</span>`
+      : u;
     return `
       <tr>
         <td>
           <span style="font-weight:${isElite ? '600' : '400'}; color:${isElite ? '#f1f5f9' : '#94a3b8'};">
-            ${u}
+            ${displayName}
           </span>
         </td>
         <td style="text-align:center;">
@@ -356,10 +430,10 @@ async function applyGeneralsExport(data) {
     const enabled = S.get('enabledGenerals', GENERALS.map((g) => g.uid));
 
     if ($('sideBadgeGenerals')) $('sideBadgeGenerals').textContent = GENERALS.length;
-    $('genHint').innerHTML = `Загружено: <b>${GENERALS.length}</b> генералов. Вместимость и навыки учтены.`;
+    $('genHint').innerHTML = t('gen.hint.loaded', { count: GENERALS.length });
     renderGeneralsTable(GENERALS, enabled);
   } catch (err) {
-    $('genHint').innerHTML = `<span class="danger">Ошибка: ${err.message}</span>`;
+    $('genHint').innerHTML = `<span class="danger">${t('gen.hint.error', { msg: err.message })}</span>`;
   }
 }
 
@@ -368,7 +442,7 @@ function renderGeneralsTable(list, enabledList) {
   const tbody = $('genTable').querySelector('tbody');
   
   if (!list.length) {
-    tbody.innerHTML = '<tr><td colspan="4" class="dim" style="text-align:center; padding:16px;">Ничего не найдено</td></tr>';
+    tbody.innerHTML = `<tr><td colspan="4" class="dim" style="text-align:center; padding:16px;">${t('gen.table.noMatch')}</td></tr>`;
     return;
   }
 
@@ -407,7 +481,7 @@ function toggleAllGenerals(on) {
 async function run() {
   const exportData = S.get('generalsExport', null);
   if (!exportData) {
-    showToast('Загрузите файл генералов во вкладке «Генералы»', 'warn');
+    showToast(t('toast.needGenerals'), 'warn');
     const genTab = document.querySelector('.side-tab-btn[data-tab="generals"]');
     if (genTab) genTab.click();
     setMobileTab('params');
@@ -416,7 +490,7 @@ async function run() {
 
   const campTokens = $('camps').value.split(/[,\s]+/).filter(Boolean);
   if (!campTokens.length) {
-    showToast('Выберите хотя бы один лагерь для атаки во вкладке «Лагеря»', 'warn');
+    showToast(t('toast.needCamps'), 'warn');
     const campTab = document.querySelector('.side-tab-btn[data-tab="camps"]');
     if (campTab) campTab.click();
     setMobileTab('params');
@@ -462,7 +536,7 @@ async function run() {
   } catch (e) {
     $('out').innerHTML = `
       <div class="panel-card" style="border-color: rgba(239, 68, 68, 0.4); background: rgba(239, 68, 68, 0.08);">
-        <div style="font-weight:700; color:#f87171; margin-bottom:6px;">Ошибка расчёта</div>
+        <div style="font-weight:700; color:#f87171; margin-bottom:6px;">${t('result.error.calcTitle')}</div>
         <div class="dim" style="font-size:13px;">${e.message}</div>
       </div>
     `;
@@ -490,9 +564,9 @@ function renderSkeletonLoader() {
             <line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line>
           </svg>
         </div>
-        <h3 style="font-size:16px; font-weight:700; color:#fff; margin-bottom:4px;">Идёт симуляция и подбор армий...</h3>
-        <p class="muted" style="font-size:13px;">Расчёт боёв на WASM-движке и распределение генералов</p>
-        <div class="font-mono dim" id="calcTimerText" style="font-size:12px; margin-top:8px;">Время: 0.0s</div>
+        <h3 style="font-size:16px; font-weight:700; color:#fff; margin-bottom:4px;">${t('loader.title')}</h3>
+        <p class="muted" style="font-size:13px;">${t('loader.desc')}</p>
+        <div class="font-mono dim" id="calcTimerText" style="font-size:12px; margin-top:8px;">${t('loader.timer', { time: '0.0' })}</div>
       </div>
 
       <div class="skeleton-card">
@@ -520,7 +594,7 @@ function renderSkeletonLoader() {
   CALC_TIMER = setInterval(() => {
     elapsed += 0.2;
     const el = $('calcTimerText');
-    if (el) el.textContent = `Время: ${elapsed.toFixed(1)}s`;
+    if (el) el.textContent = t('loader.timer', { time: elapsed.toFixed(1) });
   }, 200);
 }
 
@@ -530,9 +604,9 @@ function fmt(n) {
 
 function fmtStockPills(o) {
   const entries = Object.entries(o || {});
-  if (!entries.length) return '<span class="dim">без ограничений</span>';
+  if (!entries.length) return `<span class="dim">${t('result.unlimited')}</span>`;
   return entries
-    .map(([k, v]) => `<span class="summary-pill">${k}: <b>${v}</b></span>`)
+    .map(([k, v]) => `<span class="summary-pill">${tUnit(k)}: <b>${v}</b></span>`)
     .join(' ');
 }
 
@@ -540,7 +614,7 @@ function renderResult(r) {
   if (r.error) {
     $('out').innerHTML = `
       <div class="panel-card" style="border-color: rgba(239, 68, 68, 0.4); background: rgba(239, 68, 68, 0.08);">
-        <div style="font-weight:700; color:#f87171; margin-bottom:6px;">Не удалось построить план</div>
+        <div style="font-weight:700; color:#f87171; margin-bottom:6px;">${t('result.error.title')}</div>
         <div class="dim" style="font-size:13px;">${r.error}</div>
       </div>
     `;
@@ -562,8 +636,8 @@ function renderResult(r) {
     <!-- Tactical Summary Dashboard -->
     <div class="dashboard-header">
       <div class="dashboard-title-group">
-        <div class="dashboard-title">Тактический план боя</div>
-        <div class="dashboard-subtitle">${$('adv').value} · ${r.waves.reduce((s, w) => s + w.attacks.length, 0)} лагерей</div>
+        <div class="dashboard-title">${t('result.title')}</div>
+        <div class="dashboard-subtitle">${t('result.subtitle', { adv: $('adv').value, camps: r.waves.reduce((s, w) => s + w.attacks.length, 0) })}</div>
       </div>
       <div class="row gap-sm" style="margin:0;">
         <button class="sec" id="btnCopyPlan">
@@ -571,7 +645,7 @@ function renderResult(r) {
             <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
             <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
           </svg>
-          Скопировать план
+          ${t('result.btnCopy')}
         </button>
       </div>
     </div>
@@ -579,19 +653,19 @@ function renderResult(r) {
     <!-- Bento Stats -->
     <div class="bento-stats font-mono">
       <div class="bento-stat-card">
-        <span class="stat-label">Волн</span>
+        <span class="stat-label">${t('result.bento.waves')}</span>
         <span class="stat-value accent">${r.waves.length}</span>
       </div>
       <div class="bento-stat-card">
-        <span class="stat-label">Стоимость потерь</span>
+        <span class="stat-label">${t('result.bento.lostValue')}</span>
         <span class="stat-value warn">${fmt(r.totalLostValue)}</span>
       </div>
       <div class="bento-stat-card">
-        <span class="stat-label">Генералов задействовано</span>
+        <span class="stat-label">${t('result.bento.generals')}</span>
         <span class="stat-value ok">${totalGeneralsUsed}</span>
       </div>
       <div class="bento-stat-card">
-        <span class="stat-label">Время расчёта</span>
+        <span class="stat-label">${t('result.bento.calcTime')}</span>
         <span class="stat-value">${fmt(r.seconds)}s</span>
       </div>
     </div>
@@ -608,8 +682,8 @@ function renderResult(r) {
       const deadList = w.burned.filter((b) => !b.free).map((b) => b.name);
       burnedBanner = `
         <div style="padding:10px 14px; background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.2); border-radius:var(--radius-sm); margin:10px 0; font-size:12px; display:flex; flex-direction:column; gap:4px;">
-          ${deadList.length ? `<div><span class="tag-pill danger" style="margin-right:4px;">⏳ Откат 2 часа</span> <b>${deadList.join(', ')}</b> (погибли и выбыли из следующих волн)</div>` : ''}
-          ${freeList.length ? `<div><span class="tag-pill ok" style="margin-right:4px;">✨ Бесплатный слив</span> <b>${freeList.join(', ')}</b> (воскресли по свойству 1-UP / навыку и готовы к следующей волне)</div>` : ''}
+          ${deadList.length ? `<div><span class="tag-pill danger" style="margin-right:4px;">${t('wave.cooldown')}</span> ${t('wave.cooldownDesc', { list: deadList.join(', ') })}</div>` : ''}
+          ${freeList.length ? `<div><span class="tag-pill ok" style="margin-right:4px;">${t('wave.freeRevive')}</span> ${t('wave.freeReviveDesc', { list: freeList.join(', ') })}</div>` : ''}
         </div>
       `;
     }
@@ -618,11 +692,11 @@ function renderResult(r) {
       <div class="wave">
         <div class="wave-header">
           <div class="wave-title-wrap">
-            <span class="wave-badge">Волна ${w.index}</span>
-            <span class="wave-title">${w.attacks.length} лагерей одновременно</span>
+            <span class="wave-badge">${t('wave.badge', { num: w.index })}</span>
+            <span class="wave-title">${t('wave.campsParallel', { count: w.attacks.length })}</span>
           </div>
           <div class="wave-summary-pills font-mono">
-            <span class="summary-pill">Склад до: ${fmtStockPills(w.stockBefore)}</span>
+            <span class="summary-pill">${t('wave.stockBefore', { stock: fmtStockPills(w.stockBefore) })}</span>
           </div>
         </div>
         <div class="wave-body">
@@ -631,25 +705,26 @@ function renderResult(r) {
 
     for (const a of w.attacks) {
       const lost = a.perUnit.filter((u) => u.lost > 0)
-        .map((u) => `<span class="tag-pill warn font-mono">${u.id} −${fmt(u.lost)}</span>`).join(' ') || '<span class="tag-pill ok">без потерь</span>';
+        .map((u) => `<span class="tag-pill warn font-mono">${tUnit(u.id)} −${fmt(u.lost)}</span>`).join(' ') || `<span class="tag-pill ok">${t('atk.noLoss')}</span>`;
       
-      const enemy = a.camp.units.map((u) => `${u.amount} ${u.id}`).join(', ');
+      const enemy = a.camp.units.map((u) => `${u.amount} ${tUnit(u.id)}`).join(', ');
 
       const squadHtml = (a.squad || []).map((s) => {
         const sLost = s.perUnit.filter((u) => u.lost > 0)
-          .map((u) => `${u.id} −${fmt(u.lost)}`).join(', ') || 'нет';
+          .map((u) => `${tUnit(u.id)} −${fmt(u.lost)}`).join(', ') || t('atk.lostNone');
         
-        const isOpener = s.role && s.role.includes('вскрытие');
+        const isOpener = s.role && (s.role.includes('вскрытие') || s.role.includes('opener') || s.role.includes('відкриття'));
         const roleClass = isOpener ? 'opener' : 'finisher';
+        const roleLabel = tRole(s.role);
 
         // Check if general was sacrificed in this wave
         const burnInfo = burnedMap.get(s.general.uid);
         let burnBadge = '';
         if (burnInfo) {
           if (burnInfo.free) {
-            burnBadge = `<span class="tag-pill ok" title="Призрачный / Нарцисс воскрес бесплатно">✨ воскрес</span>`;
+            burnBadge = `<span class="tag-pill ok" title="${t('atk.badgeRevivedTip')}">${t('atk.badgeRevived')}</span>`;
           } else {
-            burnBadge = `<span class="tag-pill danger" title="Погиб: откат 2 часа">⏳ откат 2ч</span>`;
+            burnBadge = `<span class="tag-pill danger" title="${t('atk.badgeCooldownTip')}">${t('atk.badgeCooldown')}</span>`;
           }
         }
 
@@ -659,18 +734,18 @@ function renderResult(r) {
               <div class="step-gen-name">
                 <span class="camp-order-badge" style="position:static; width:18px; height:18px; font-size:10px;">${s.order}</span>
                 <span>${s.general.name}</span>
-                <span class="dim" style="font-size:11px; font-weight:400;">(${s.general.base}, вмест. ${s.general.capacity})</span>
+                <span class="dim" style="font-size:11px; font-weight:400;">(${s.general.base}, ${t('atk.cap', { cap: s.general.capacity })})</span>
                 ${burnBadge}
               </div>
-              <span class="step-role-badge ${roleClass}">${s.role || 'атака'}</span>
+              <span class="step-role-badge ${roleClass}">${roleLabel}</span>
             </div>
             <div class="step-army font-mono">
-              ${s.army.map((u) => `${u.amount} ${u.id}`).join(' + ')}
+              ${s.army.map((u) => `${u.amount} ${tUnit(u.id)}`).join(' + ')}
             </div>
             <div class="step-stats font-mono">
-              <span>Убито в лагере: <b>${s.defKills}</b></span>
-              <span>Раундов: <b>${fmt(s.rounds)}</b></span>
-              <span>Потери: <b>${sLost}</b></span>
+              <span>${t('atk.killed', { count: s.defKills })}</span>
+              <span>${t('atk.rounds', { count: fmt(s.rounds) })}</span>
+              <span>${t('atk.stepLosses', { losses: sLost })}</span>
             </div>
           </div>
         `;
@@ -678,24 +753,24 @@ function renderResult(r) {
 
       let tagBadge = '';
       if (a.chained) {
-        tagBadge = `<span class="tag-pill warn">Цепочка ${a.chainIndex}/${a.chainTotal} (${a.chainCamps.join(' → ')})</span>`;
+        tagBadge = `<span class="tag-pill warn">${t('atk.chainBadge', { idx: a.chainIndex, total: a.chainTotal, path: a.chainCamps.join(' → ') })}</span>`;
       } else if (a.generalsUsed > 1) {
-        tagBadge = `<span class="tag-pill warn">Отряд (${a.generalsUsed} ген.)</span>`;
+        tagBadge = `<span class="tag-pill warn">${t('atk.squadBadge', { count: a.generalsUsed })}</span>`;
       }
 
       html += `
         <div class="atk">
           <div class="atk-header">
             <div class="atk-camp-info">
-              <span>Лагерь ${a.camp.number}</span>
-              <span class="camp-type-pill ${campKind(a.camp.type)}">${a.camp.type}</span>
-              <span class="dim" style="font-size:12px; font-weight:400;">(сектор ${a.camp.sector})</span>
+              <span>${t('atk.camp', { num: a.camp.number })}</span>
+              <span class="camp-type-pill ${campKind(a.camp.type)}">${tCampType(a.camp.type)}</span>
+              <span class="dim" style="font-size:12px; font-weight:400;">(${t('atk.sector', { num: a.camp.sector })})</span>
             </div>
             <div>${tagBadge}</div>
           </div>
 
           <div class="enemy-box">
-            <b>Противник:</b> ${enemy}
+            <b>${t('atk.enemy')}</b> ${enemy}
           </div>
 
           <div class="squad-steps">
@@ -704,14 +779,14 @@ function renderResult(r) {
 
           <div class="atk-footer font-mono">
             <div class="row gap-sm" style="margin:0; flex-wrap:wrap;">
-              <span class="muted">Потери:</span>
+              <span class="muted">${t('atk.losses')}</span>
               ${lost}
-              <span class="dim">· стоимость: ${fmt(a.lostValue)}</span>
+              <span class="dim">· ${t('atk.cost', { cost: fmt(a.lostValue) })}</span>
             </div>
             <div class="row gap-sm" style="margin:0;">
-              <span class="tag-pill ok">Победа 100%</span>
-              ${a.soloable === false ? '<span class="dim" style="font-size:10px;">(соло невозможно)</span>' : ''}
-              ${a.sacrificeExempt ? '<span class="tag-pill warn" title="Использованы дорогие юниты на вскрытии">жертва</span>' : ''}
+              <span class="tag-pill ok">${t('atk.victory')}</span>
+              ${a.soloable === false ? `<span class="dim" style="font-size:10px;">${t('atk.soloNo')}</span>` : ''}
+              ${a.sacrificeExempt ? `<span class="tag-pill warn" title="${t('atk.sacrificeBadge')}">${t('atk.sacrificeBadge')}</span>` : ''}
             </div>
           </div>
         </div>
@@ -721,16 +796,16 @@ function renderResult(r) {
     html += `
         </div>
         <div class="wave-stock-footer font-mono">
-          <div>Задействовано армий: ${fmtStockPills(w.waveUsage)}</div>
-          <div>Списано потерь: ${fmtStockPills(w.waveLosses)}</div>
-          <div>Остаток на складе: ${fmtStockPills(w.stockAfter)}</div>
+          <div>${t('wave.armiesUsed', { stock: fmtStockPills(w.waveUsage) })}</div>
+          <div>${t('wave.lossesDeducted', { stock: fmtStockPills(w.waveLosses) })}</div>
+          <div>${t('wave.stockAfter', { stock: fmtStockPills(w.stockAfter) })}</div>
         </div>
     `;
 
     if (w.blocker) {
       html += `
         <div style="padding:10px 18px; background:rgba(245,158,11,0.1); border-top:1px solid rgba(245,158,11,0.2); font-size:12px; color:#fbbf24;">
-          Волна завершена: лагерь ${w.blocker.number} — ${w.blocker.reason} (требуется отряд из ${w.blocker.need} ген.)
+          ${t('wave.blocker', { num: w.blocker.number, reason: tReason(w.blocker.reason), need: w.blocker.need })}
         </div>
       `;
     }
@@ -742,8 +817,8 @@ function renderResult(r) {
   if (r.unsolved && r.unsolved.length) {
     html += `
       <div class="panel-card" style="border-color: rgba(239, 68, 68, 0.4); background: rgba(239, 68, 68, 0.08);">
-        <div style="font-weight:700; color:#f87171; margin-bottom:4px;">Остались не взятыми лагеря: ${r.unsolved.map((c) => c.number).join(', ')}</div>
-        ${r.stopReason ? `<div class="dim" style="font-size:12px;">Причина остановки: ${r.stopReason}</div>` : ''}
+        <div style="font-weight:700; color:#f87171; margin-bottom:4px;">${t('unsolved.title', { camps: r.unsolved.map((c) => c.number).join(', ') })}</div>
+        ${r.stopReason ? `<div class="dim" style="font-size:12px;">${t('unsolved.reason', { reason: r.stopReason })}</div>` : ''}
       </div>
     `;
   }
@@ -759,33 +834,33 @@ function copyPlanToClipboard() {
   if (!LAST_PLAN_RESULT || !LAST_PLAN_RESULT.waves) return;
 
   const lines = [];
-  lines.push(`=== ПЛАН БОЯ: ${$('adv').value} ===`);
-  lines.push(`Волн: ${LAST_PLAN_RESULT.waves.length} | Потери: ${fmt(LAST_PLAN_RESULT.totalLostValue)}`);
+  lines.push(t('plan.header', { adv: $('adv').value }));
+  lines.push(t('plan.summary', { waves: LAST_PLAN_RESULT.waves.length, losses: fmt(LAST_PLAN_RESULT.totalLostValue) }));
   lines.push('');
 
   for (const w of LAST_PLAN_RESULT.waves) {
-    lines.push(`--- ВОЛНА ${w.index} (${w.attacks.length} лаг.) ---`);
+    lines.push(t('plan.waveHeader', { wave: w.index, camps: w.attacks.length }));
     if (w.burned && w.burned.length) {
       const dead = w.burned.filter((b) => !b.free).map((b) => b.name);
       const revived = w.burned.filter((b) => b.free).map((b) => b.name);
-      if (dead.length) lines.push(`[Откат 2ч]: ${dead.join(', ')}`);
-      if (revived.length) lines.push(`[Бесплатное воскрешение]: ${revived.join(', ')}`);
+      if (dead.length) lines.push(t('plan.cdLabel', { list: dead.join(', ') }));
+      if (revived.length) lines.push(t('plan.reviveLabel', { list: revived.join(', ') }));
     }
     for (const a of w.attacks) {
-      lines.push(`[Лагерь ${a.camp.number}] ${a.camp.type} (Сектор ${a.camp.sector})`);
+      lines.push(t('plan.campHeader', { num: a.camp.number, type: tCampType(a.camp.type), sector: a.camp.sector }));
       for (const s of (a.squad || [])) {
-        const armyStr = s.army.map((u) => `${u.amount} ${u.id}`).join(' + ');
-        const sLost = s.perUnit.filter((u) => u.lost > 0).map((u) => `${u.id} -${fmt(u.lost)}`).join(', ') || 'без потерь';
-        lines.push(`  ${s.order}. ${s.general.name} (${s.role}): ${armyStr} [Потери: ${sLost}]`);
+        const armyStr = s.army.map((u) => `${u.amount} ${tUnit(u.id)}`).join(' + ');
+        const sLost = s.perUnit.filter((u) => u.lost > 0).map((u) => `${tUnit(u.id)} -${fmt(u.lost)}`).join(', ') || t('plan.noLoss');
+        lines.push(t('plan.attackLine', { order: s.order, gen: s.general.name, role: tRole(s.role), army: armyStr, losses: sLost }));
       }
     }
     lines.push('');
   }
 
   navigator.clipboard.writeText(lines.join('\n')).then(() => {
-    showToast('План скопирован в буфер обмена!', 'ok');
+    showToast(t('toast.copied'), 'ok');
   }).catch(() => {
-    showToast('Не удалось скопировать план', 'warn');
+    showToast(t('toast.copyFailed'), 'warn');
   });
 }
 
@@ -830,3 +905,4 @@ function showToast(msg, type = 'ok') {
 }
 
 init();
+})();
