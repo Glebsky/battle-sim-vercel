@@ -4,8 +4,26 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>TSO Adventure Planner — Tactical Engine</title>
-<link rel="icon" type="image/svg+xml" href="/favicon.svg">
-<link rel="alternate icon" href="/favicon.ico">
+
+<!-- Favicons & App Icons -->
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="shortcut icon" href="/favicon.ico">
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+
+<!-- Web Manifest & Theme Colors matching #0b0e14 site palette -->
+<link rel="manifest" href="/site.webmanifest">
+<meta name="theme-color" content="#0b0e14">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0b0e14">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#10141d">
+<meta name="msapplication-TileColor" content="#0b0e14">
+<meta name="msapplication-config" content="/browserconfig.xml">
+<meta name="application-name" content="TSO Adventure Tactical Planner">
+<meta name="apple-mobile-web-app-title" content="TSO Planner">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -80,6 +98,16 @@
     display: flex;
     align-items: center;
     gap: 12px;
+  }
+
+  .logo-img {
+    width: 34px;
+    height: 34px;
+    border-radius: var(--radius-sm);
+    object-fit: contain;
+    flex-shrink: 0;
+    box-shadow: 0 0 16px var(--accent-glow);
+    display: block;
   }
 
   .logo-icon {
@@ -568,6 +596,86 @@
     color: #93c5fd;
     font-size: 10.5px;
     display: block;
+  }
+  /* Dynamic Unit Chips & Floating Tooltips */
+  .app-tooltip {
+    position: fixed;
+    z-index: 99999;
+    pointer-events: none;
+    background: rgba(15, 23, 42, 0.96);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: var(--radius-sm);
+    padding: 5px 9px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #f1f5f9;
+    box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.75);
+    white-space: nowrap;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(4px) scale(0.96);
+    transition: opacity 0.15s cubic-bezier(0.16, 1, 0.3, 1), transform 0.15s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.15s;
+  }
+  .app-tooltip.visible {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0) scale(1);
+  }
+
+  .unit-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--radius-sm);
+    padding: 3px 8px 3px 4px;
+    vertical-align: middle;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    line-height: 1.3;
+    cursor: default;
+    transition: background 0.15s ease, border-color 0.15s ease;
+    user-select: none;
+  }
+  .unit-chip:hover {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(96, 165, 250, 0.45);
+  }
+  .unit-chip.loss {
+    background: rgba(239, 68, 68, 0.12);
+    border-color: rgba(239, 68, 68, 0.28);
+    color: #fca5a5;
+  }
+  .unit-chip.loss:hover {
+    background: rgba(239, 68, 68, 0.2);
+    border-color: rgba(239, 68, 68, 0.45);
+  }
+
+  .unit-icon {
+    width: 24px;
+    height: 24px;
+    object-fit: contain;
+    display: inline-block;
+    vertical-align: middle;
+    border-radius: 3px;
+    flex-shrink: 0;
+  }
+  .unit-icon-table {
+    width: 30px;
+    height: 30px;
+    object-fit: contain;
+    display: inline-block;
+    vertical-align: middle;
+    border-radius: 3px;
+    margin-right: 8px;
+    background: rgba(0, 0, 0, 0.2);
+    flex-shrink: 0;
+  }
+  .unit-count {
+    font-weight: 700;
   }
 
   /* Buttons */
@@ -1386,16 +1494,9 @@
 <!-- Header -->
 <header>
   <div class="logo-group">
-    <div class="logo-icon">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-        <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
-        <polyline points="2 17 12 22 22 17"></polyline>
-        <polyline points="2 12 12 17 22 12"></polyline>
-      </svg>
-    </div>
+    <img src="/logo.png" alt="TSO Planner Logo" class="logo-img" width="34" height="34">
     <h1>
       <span data-i18n="app.title">TSO Adventure Planner</span>
-      <span class="header-badge" data-i18n="app.badge">WASM Engine</span>
     </h1>
   </div>
 
@@ -1493,6 +1594,14 @@
               </svg>
               ↻
             </button>
+          </div>
+
+          <div class="input-search-wrap" style="margin-bottom:6px;">
+            <svg class="input-search-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <input type="text" id="advSearch" placeholder="Filter adventure..." data-i18n-placeholder="pane.camps.searchPlaceholder" autocomplete="off">
           </div>
 
           <div class="row" style="margin-top:0;">
@@ -1864,6 +1973,7 @@
 </div>
 
 <script src="/i18n.js"></script>
+<script src="/unit-icons.js"></script>
 <script src="/app.js"></script>
 </body>
 </html>

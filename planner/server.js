@@ -25,21 +25,23 @@ function readBody(req) {
   });
 }
 
+const MIME_TYPES = {
+  '.html': 'text/html; charset=utf-8',
+  '.js': 'text/javascript; charset=utf-8',
+  '.css': 'text/css; charset=utf-8',
+  '.svg': 'image/svg+xml',
+  '.webp': 'image/webp',
+  '.png': 'image/png',
+  '.ico': 'image/x-icon',
+  '.json': 'application/json; charset=utf-8',
+  '.webmanifest': 'application/manifest+json; charset=utf-8',
+  '.xml': 'application/xml; charset=utf-8',
+};
+
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, 'http://localhost');
   try {
-    if (req.method === 'GET' && (url.pathname === '/' || url.pathname === '/index.html')) {
-      return send(res, 200, fs.readFileSync(path.join(UI_DIR, 'index.html')), 'text/html; charset=utf-8');
-    }
-    if (req.method === 'GET' && url.pathname === '/app.js') {
-      return send(res, 200, fs.readFileSync(path.join(UI_DIR, 'app.js')), 'text/javascript; charset=utf-8');
-    }
-    if (req.method === 'GET' && url.pathname === '/i18n.js') {
-      return send(res, 200, fs.readFileSync(path.join(UI_DIR, 'i18n.js')), 'text/javascript; charset=utf-8');
-    }
-    if (req.method === 'GET' && (url.pathname === '/favicon.svg' || url.pathname === '/favicon.ico')) {
-      return send(res, 200, fs.readFileSync(path.join(UI_DIR, 'favicon.svg')), 'image/svg+xml');
-    }
+    // API endpoints
     if (req.method === 'GET' && url.pathname === '/api/meta') {
       return send(res, 200, {
         adventures: listAdventures(),
@@ -72,6 +74,18 @@ const server = http.createServer(async (req, res) => {
       const freshPlanner = require('./planner');
       return send(res, 200, freshPlanner.plan(body));
     }
+    if (req.method === 'GET') {
+      let reqPath = decodeURIComponent(url.pathname);
+      if (reqPath === '/' || !reqPath) reqPath = '/index.html';
+      const cleanPath = path.normalize(reqPath).replace(/^(\.\.[\/\\])+/, '');
+      const localFile = path.join(UI_DIR, cleanPath);
+      if (localFile.startsWith(UI_DIR) && fs.existsSync(localFile) && fs.statSync(localFile).isFile()) {
+        const ext = path.extname(localFile).toLowerCase();
+        const mime = MIME_TYPES[ext] || 'application/octet-stream';
+        return send(res, 200, fs.readFileSync(localFile), mime);
+      }
+    }
+
     send(res, 404, { error: 'not found' });
   } catch (e) {
     send(res, 500, { error: (e && e.message) || String(e) });

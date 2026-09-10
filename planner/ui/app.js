@@ -55,6 +55,96 @@ let SETTINGS = {
 
 const $ = (id) => document.getElementById(id);
 
+function getUnitIconUrl(unitId) {
+  if (typeof UNIT_ICONS !== 'undefined' && UNIT_ICONS[unitId]) {
+    return UNIT_ICONS[unitId];
+  }
+  return null;
+}
+
+function renderUnitIcon(unitId, extraClass = '') {
+  const icon = getUnitIconUrl(unitId);
+  const name = tUnit(unitId);
+  if (!icon) return '';
+  return `<img src="${icon}" class="unit-icon ${extraClass}" alt="${name}" data-tooltip="${name}" loading="lazy">`;
+}
+
+function renderUnitChip(unitId, count) {
+  const icon = getUnitIconUrl(unitId);
+  const name = tUnit(unitId);
+  const countStr = count !== undefined ? `<span class="unit-count">${count}</span>` : '';
+  if (!icon) {
+    return `<span class="unit-chip" data-tooltip="${name}">${count ? count + ' ' : ''}${name}</span>`;
+  }
+  return `<span class="unit-chip" data-tooltip="${name}"><img src="${icon}" class="unit-icon" alt="${name}" loading="lazy">${countStr}</span>`;
+}
+
+function renderUnitLossChip(unitId, lostCount) {
+  const icon = getUnitIconUrl(unitId);
+  const name = tUnit(unitId);
+  const lostStr = `−${fmt(lostCount)}`;
+  if (!icon) {
+    return `<span class="unit-chip loss" data-tooltip="${name}">${name} ${lostStr}</span>`;
+  }
+  return `<span class="unit-chip loss" data-tooltip="${name}"><img src="${icon}" class="unit-icon" alt="${name}" loading="lazy"><span class="unit-count">${lostStr}</span></span>`;
+}
+
+function initTooltips() {
+  let tooltip = $('appTooltip');
+  if (!tooltip) {
+    tooltip = document.createElement('div');
+    tooltip.id = 'appTooltip';
+    tooltip.className = 'app-tooltip';
+    document.body.appendChild(tooltip);
+  }
+
+  let activeTarget = null;
+
+  function positionTooltip(target) {
+    const rect = target.getBoundingClientRect();
+    const tipRect = tooltip.getBoundingClientRect();
+    let top = rect.top - tipRect.height - 6;
+    let left = rect.left + (rect.width - tipRect.width) / 2;
+
+    if (top < 6) {
+      top = rect.bottom + 6;
+    }
+    if (left < 6) left = 6;
+    if (left + tipRect.width > window.innerWidth - 6) {
+      left = window.innerWidth - tipRect.width - 6;
+    }
+
+    tooltip.style.top = `${Math.round(top)}px`;
+    tooltip.style.left = `${Math.round(left)}px`;
+  }
+
+  document.addEventListener('mouseover', (e) => {
+    const target = e.target.closest('[data-tooltip]');
+    if (!target) return;
+    activeTarget = target;
+    const text = target.getAttribute('data-tooltip');
+    if (!text) return;
+    tooltip.textContent = text;
+    tooltip.classList.add('visible');
+    positionTooltip(target);
+  });
+
+  document.addEventListener('mouseout', (e) => {
+    if (!activeTarget) return;
+    const related = e.relatedTarget;
+    if (!related || !activeTarget.contains(related)) {
+      tooltip.classList.remove('visible');
+      activeTarget = null;
+    }
+  });
+
+  window.addEventListener('scroll', () => {
+    if (activeTarget && tooltip.classList.contains('visible')) {
+      positionTooltip(activeTarget);
+    }
+  }, true);
+}
+
 async function loadMeta() {
   META = await (await fetch('/api/meta')).json();
   const prev = $('adv').value || S.get('adventure', null);
@@ -62,14 +152,48 @@ async function loadMeta() {
   updateDockSummary();
 }
 
-function updateAdventureSelect(selectedId = null) {
+function matchesAdventure(advId, query) {
+  if (!query) return true;
+  const q = query.toLowerCase().trim();
+  if (!q) return true;
+  const idLower = advId.toLowerCase();
+  if (idLower.includes(q)) return true;
+  const normId = idLower.replace(/[_\-]+/g, ' ');
+  const normQ = q.replace(/[_\-]+/g, ' ');
+  if (normId.includes(normQ)) return true;
+  const terms = normQ.split(/\s+/).filter(Boolean);
+  return terms.length > 0 && terms.every((term) => normId.includes(term) || idLower.includes(term));
+}
+
+function updateAdventureSelect(selectedId = null, query = null) {
   if (!META || !META.adventures) return;
+  const q = query !== null ? query : ($('advSearch') ? $('advSearch').value : '');
+  const filtered = META.adventures.filter((a) => matchesAdventure(a.id, q));
   const prev = selectedId || ($('adv') ? $('adv').value : null) || S.get('adventure', null);
-  $('adv').innerHTML = META.adventures
+
+  if (filtered.length === 0) {
+    $('adv').innerHTML = `<option value="" disabled selected>${t('pane.camps.notFound')}</option>`;
+    return;
+  }
+
+  $('adv').innerHTML = filtered
     .map((a) => `<option value="${a.id}">${a.id} (${t('camp.suffix', { camps: a.camps })})</option>`)
     .join('');
-  const ids = META.adventures.map((a) => a.id);
-  $('adv').value = ids.includes(prev) ? prev : (ids[0] || '');
+
+  const filteredIds = filtered.map((a) => a.id);
+  const nextVal = filteredIds.includes(prev) ? prev : (filteredIds[0] || '');
+  const changed = $('adv').value !== nextVal;
+  $('adv').value = nextVal;
+
+  if (changed) {
+    S.set('adventure', nextVal);
+    updateDockSummary();
+    loadAdventureInfo();
+  }
+}
+
+function filterAdventures(query) {
+  updateAdventureSelect(null, query);
 }
 
 function updateDockSummary() {
@@ -80,6 +204,7 @@ function updateDockSummary() {
 
 async function init() {
   await loadMeta();
+  initTooltips();
   $('camps').value = S.get('camps', '');
   $('step').value = S.get('step', 10);
   $('reps').value = S.get('reps', 60);
@@ -158,6 +283,9 @@ async function init() {
   $('tabBtnResults').onclick = () => setMobileTab('results');
 
   // Adventure events
+  if ($('advSearch')) {
+    $('advSearch').oninput = (e) => filterAdventures(e.target.value);
+  }
   $('adv').onchange = () => {
     S.set('adventure', $('adv').value);
     updateDockSummary();
@@ -385,9 +513,12 @@ function renderUnits() {
     return `
       <tr>
         <td>
-          <span style="font-weight:${isElite ? '600' : '400'}; color:${isElite ? '#f1f5f9' : '#94a3b8'};">
-            ${displayName}
-          </span>
+          <div style="display:flex; align-items:center; gap:8px;">
+            ${renderUnitIcon(u, 'unit-icon-table')}
+            <span style="font-weight:${isElite ? '600' : '400'}; color:${isElite ? '#f1f5f9' : '#94a3b8'};">
+              ${displayName}
+            </span>
+          </div>
         </td>
         <td style="text-align:center;">
           <input type="checkbox" data-u="${u}" class="use" ${use.includes(u) ? 'checked' : ''}>
@@ -606,7 +737,7 @@ function fmtStockPills(o) {
   const entries = Object.entries(o || {});
   if (!entries.length) return `<span class="dim">${t('result.unlimited')}</span>`;
   return entries
-    .map(([k, v]) => `<span class="summary-pill">${tUnit(k)}: <b>${v}</b></span>`)
+    .map(([k, v]) => renderUnitChip(k, v))
     .join(' ');
 }
 
@@ -705,13 +836,13 @@ function renderResult(r) {
 
     for (const a of w.attacks) {
       const lost = a.perUnit.filter((u) => u.lost > 0)
-        .map((u) => `<span class="tag-pill warn font-mono">${tUnit(u.id)} −${fmt(u.lost)}</span>`).join(' ') || `<span class="tag-pill ok">${t('atk.noLoss')}</span>`;
+        .map((u) => renderUnitLossChip(u.id, u.lost)).join(' ') || `<span class="tag-pill ok">${t('atk.noLoss')}</span>`;
       
-      const enemy = a.camp.units.map((u) => `${u.amount} ${tUnit(u.id)}`).join(', ');
+      const enemy = a.camp.units.map((u) => renderUnitChip(u.id, u.amount)).join(' ');
 
       const squadHtml = (a.squad || []).map((s) => {
         const sLost = s.perUnit.filter((u) => u.lost > 0)
-          .map((u) => `${tUnit(u.id)} −${fmt(u.lost)}`).join(', ') || t('atk.lostNone');
+          .map((u) => renderUnitLossChip(u.id, u.lost)).join(' ') || t('atk.lostNone');
         
         const isOpener = s.role && (s.role.includes('вскрытие') || s.role.includes('opener') || s.role.includes('відкриття'));
         const roleClass = isOpener ? 'opener' : 'finisher';
@@ -740,7 +871,7 @@ function renderResult(r) {
               <span class="step-role-badge ${roleClass}">${roleLabel}</span>
             </div>
             <div class="step-army font-mono">
-              ${s.army.map((u) => `${u.amount} ${tUnit(u.id)}`).join(' + ')}
+              ${s.army.map((u) => renderUnitChip(u.id, u.amount)).join(' <span style="color:var(--text-dim); opacity:0.6; font-size:11px;">+</span> ')}
             </div>
             <div class="step-stats font-mono">
               <span>${t('atk.killed', { count: s.defKills })}</span>

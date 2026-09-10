@@ -6,7 +6,7 @@ const I18N = {
   en: {
     // Header & Navigation
     'app.title': 'TSO Adventure Planner',
-    'app.badge': 'WASM Engine',
+    'app.badge': '',
     'nav.params': 'Parameters',
     'nav.results': 'Results',
     
@@ -18,6 +18,8 @@ const I18N = {
 
     // Pane 1: Camps & Adventure
     'pane.camps.title': 'Adventure',
+    'pane.camps.searchPlaceholder': 'Search adventure...',
+    'pane.camps.notFound': 'No adventures found',
     'pane.camps.reload': 'Reload adventure list',
     'pane.camps.all': 'All in order',
     'pane.camps.clear': 'Clear',
@@ -125,7 +127,7 @@ const I18N = {
 
     // Skeleton Loader
     'loader.title': 'Simulating battles & optimizing armies...',
-    'loader.desc': 'WASM combat engine calculation and general wave assignment',
+    'loader.desc': 'Combat simulation and general wave assignment',
     'loader.timer': 'Time: {time}s',
 
     // Dashboard Results
@@ -212,7 +214,7 @@ const I18N = {
   uk: {
     // Header & Navigation
     'app.title': 'TSO Adventure Planner',
-    'app.badge': 'WASM Engine',
+    'app.badge': '',
     'nav.params': 'Параметри',
     'nav.results': 'Результати',
 
@@ -224,6 +226,8 @@ const I18N = {
 
     // Pane 1: Camps & Adventure
     'pane.camps.title': 'Пригода',
+    'pane.camps.searchPlaceholder': 'Пошук пригоди...',
+    'pane.camps.notFound': 'Пригод не знайдено',
     'pane.camps.reload': 'Оновити список пригод',
     'pane.camps.all': 'Всі по порядку',
     'pane.camps.clear': 'Очистити',
@@ -331,7 +335,7 @@ const I18N = {
 
     // Skeleton Loader
     'loader.title': 'Триває симуляція та підбір армій...',
-    'loader.desc': 'Розрахунок боїв на WASM-рушії та розподіл генералів',
+    'loader.desc': 'Розрахунок боїв та розподіл генералів',
     'loader.timer': 'Час: {time}s',
 
     // Dashboard Results
@@ -418,7 +422,7 @@ const I18N = {
   ru: {
     // Header & Navigation
     'app.title': 'TSO Adventure Planner',
-    'app.badge': 'WASM Engine',
+    'app.badge': '',
     'nav.params': 'Параметры',
     'nav.results': 'Результат',
 
@@ -430,6 +434,8 @@ const I18N = {
 
     // Pane 1: Camps & Adventure
     'pane.camps.title': 'Приключение',
+    'pane.camps.searchPlaceholder': 'Поиск приключения...',
+    'pane.camps.notFound': 'Приключения не найдены',
     'pane.camps.reload': 'Обновить список приключений',
     'pane.camps.all': 'Все по порядку',
     'pane.camps.clear': 'Очистить',
@@ -537,7 +543,7 @@ const I18N = {
 
     // Skeleton Loader
     'loader.title': 'Идёт симуляция и подбор армий...',
-    'loader.desc': 'Расчёт боёв на WASM-движке и распределение генералов',
+    'loader.desc': 'Расчёт боёв и распределение генералов',
     'loader.timer': 'Время: {time}s',
 
     // Dashboard Results
