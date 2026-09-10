@@ -1,9 +1,10 @@
 {
   "name": "tso-adventure-planner",
   "version": "1.0.0",
-  "description": "TSO Adventure Planner with WASM Engine",
+  "description": "TSO Adventure Tactical Planner",
   "type": "commonjs",
   "scripts": {
-    "start": "node planner/server.js"
+    "start": "node planner/server.js",
+    "download:maps": "node planner/download_maps.js"
   }
 }
