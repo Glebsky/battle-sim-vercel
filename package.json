@@ -4,6 +4,7 @@
   "description": "TSO Adventure Tactical Planner",
   "type": "commonjs",
   "scripts": {
-    "start": "node planner/server.js"
+    "start": "node planner/server.js",
+    "download:maps": "node planner/download_maps.js"
   }
 }

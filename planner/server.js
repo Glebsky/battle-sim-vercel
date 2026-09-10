@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 // Local web UI for the TSO adventure planner.
 const http = require('http');
+const https = require('https');
 const fs = require('fs');
 const path = require('path');
 const { listAdventures, loadAdventure, ADVENTURE_DIR } = require('./engine');
@@ -8,6 +9,38 @@ const { plan, buildGenerals, ALL_PLAYER_UNITS, DEFAULT_UNITS } = require('./plan
 
 const PORT = Number(process.env.PORT || 8787);
 const UI_DIR = path.join(__dirname, 'ui');
+const MAPS_DIR = path.join(__dirname, '..', 'maps');
+if (!fs.existsSync(MAPS_DIR)) {
+  try { fs.mkdirSync(MAPS_DIR, { recursive: true }); } catch (e) {}
+}
+
+const MAP_FOLDERS = ['maps2400', 'maps1600', 'maps1200', 'maps', 'maps800', 'maps3200'];
+
+function fetchRemoteMap(key) {
+  return new Promise((resolve) => {
+    let index = 0;
+    function tryNext() {
+      if (index >= MAP_FOLDERS.length) return resolve(null);
+      const folder = MAP_FOLDERS[index++];
+      const remoteUrl = `https://tsowiki.eu/images/${folder}/${key}.webp`;
+      const req = https.get(remoteUrl, {
+        headers: {
+          'Referer': 'https://tsowiki.eu/',
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+        },
+      }, (res) => {
+        if (res.statusCode === 200) {
+          resolve({ res, folder });
+        } else {
+          res.resume();
+          tryNext();
+        }
+      });
+      req.on('error', () => tryNext());
+    }
+    tryNext();
+  });
+}
 
 function send(res, code, body, type = 'application/json; charset=utf-8') {
   res.writeHead(code, { 'Content-Type': type });
@@ -51,13 +84,44 @@ const server = http.createServer(async (req, res) => {
       });
     }
     if (req.method === 'GET' && url.pathname === '/api/adventure') {
-      const { camps } = loadAdventure(url.searchParams.get('id'));
+      const { data, camps } = loadAdventure(url.searchParams.get('id'));
       return send(res, 200, {
+        map: data.map || null,
         camps: camps.map((c) => ({
           number: c.number, key: c.key, type: c.type, sector: c.sector,
+          position: data.camps[c.key]?.position || null,
           units: c.units.map((u) => ({ id: u.id, amount: u.amount })),
         })),
       });
+    }
+    if (req.method === 'GET' && url.pathname === '/api/map-image') {
+      const key = (url.searchParams.get('key') || '').trim();
+      if (!key || !/^[a-zA-Z0-9_-]+$/.test(key)) {
+        return send(res, 400, { error: 'Invalid map key' });
+      }
+      const localFile = path.join(MAPS_DIR, `${key}.webp`);
+      if (fs.existsSync(localFile) && fs.statSync(localFile).size > 0) {
+        res.writeHead(200, {
+          'Content-Type': 'image/webp',
+          'Cache-Control': 'public, max-age=31536000, immutable',
+        });
+        return fs.createReadStream(localFile).pipe(res);
+      }
+      const remote = await fetchRemoteMap(key);
+      if (!remote) {
+        return send(res, 404, { error: 'Map image not found' });
+      }
+      res.writeHead(200, {
+        'Content-Type': 'image/webp',
+        'Cache-Control': 'public, max-age=31536000, immutable',
+      });
+      const fileStream = fs.createWriteStream(localFile);
+      fileStream.on('error', () => {
+        try { fs.unlinkSync(localFile); } catch (e) {}
+      });
+      remote.res.pipe(fileStream);
+      remote.res.pipe(res);
+      return;
     }
     if (req.method === 'POST' && url.pathname === '/api/generals') {
       const body = await readBody(req);

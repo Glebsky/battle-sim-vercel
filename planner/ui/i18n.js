@@ -34,6 +34,19 @@ const I18N = {
     'camp.legend.boss': 'boss',
     'camp.tooltip': 'Camp {num} (Sector {sector}, {type})\nEnemies ({total}): {enemies}',
     'camp.suffix': '{camps} camps',
+    'pane.camps.openMap': 'Map',
+    'mapModal.title': 'Adventure Map',
+    'mapModal.queueStatus': 'Queue: {selected} / {total} camps',
+    'mapModal.all': 'All in order',
+    'mapModal.clear': 'Clear',
+    'mapModal.close': 'Done',
+    'mapModal.zoomIn': 'Zoom in',
+    'mapModal.zoomOut': 'Zoom out',
+    'mapModal.zoomReset': 'Fit map',
+    'mapModal.statusSelected': 'Selected (#{order} in queue) — click to remove',
+    'mapModal.statusUnselected': 'Not selected — click to add to queue',
+    'mapModal.loading': 'Loading map image...',
+    'mapModal.loadError': 'Map image could not be loaded.',
 
     // Pane 2: Generals
     'pane.gen.title': 'Generals Setup',
@@ -242,6 +255,19 @@ const I18N = {
     'camp.legend.boss': 'бос',
     'camp.tooltip': 'Табір {num} (Сектор {sector}, {type})\nВорогів ({total}): {enemies}',
     'camp.suffix': '{camps} таб.',
+    'pane.camps.openMap': 'Карта',
+    'mapModal.title': 'Карта пригоди',
+    'mapModal.queueStatus': 'Черга: {selected} / {total} таборів',
+    'mapModal.all': 'Всі по порядку',
+    'mapModal.clear': 'Очистити',
+    'mapModal.close': 'Готово',
+    'mapModal.zoomIn': 'Збільшити',
+    'mapModal.zoomOut': 'Зменшити',
+    'mapModal.zoomReset': 'Скинути масштаб',
+    'mapModal.statusSelected': 'Обрано (#{order} у черзі) — натисніть, щоб видалити',
+    'mapModal.statusUnselected': 'Не обрано — натисніть, щоб додати у чергу',
+    'mapModal.loading': 'Завантаження карти...',
+    'mapModal.loadError': 'Не вдалося завантажити карту.',
 
     // Pane 2: Generals
     'pane.gen.title': 'Завантаження генералів',
@@ -450,6 +476,19 @@ const I18N = {
     'camp.legend.boss': 'босс',
     'camp.tooltip': 'Лагерь {num} (Сектор {sector}, {type})\nВрагов ({total}): {enemies}',
     'camp.suffix': '{camps} лаг.',
+    'pane.camps.openMap': 'Карта',
+    'mapModal.title': 'Карта приключения',
+    'mapModal.queueStatus': 'Очередь: {selected} / {total} лагерей',
+    'mapModal.all': 'Все по порядку',
+    'mapModal.clear': 'Очистить',
+    'mapModal.close': 'Готово',
+    'mapModal.zoomIn': 'Приблизить',
+    'mapModal.zoomOut': 'Отдалить',
+    'mapModal.zoomReset': 'Сбросить масштаб',
+    'mapModal.statusSelected': 'Выбран (#{order} в очереди) — нажмите, чтобы удалить',
+    'mapModal.statusUnselected': 'Не выбран — нажмите, чтобы добавить в очередь',
+    'mapModal.loading': 'Загрузка карты...',
+    'mapModal.loadError': 'Не удалось загрузить карту.',
 
     // Pane 2: Generals
     'pane.gen.title': 'Загрузка генералов',
@@ -968,6 +1007,546 @@ function updatePageTranslations() {
 }
 
 // Attach to window
+
+const ADVENTURE_NAMES = {
+  "1001NightsWoodcutter": {
+    "en": "Ali Baba the Young Woodcutter",
+    "uk": "Алі-Баба, молодий лісоруб",
+    "ru": "Али-Баба, молодой дровосек"
+  },
+  "1001NightsFirstThief": {
+    "en": "Ali Baba and the First Thief",
+    "uk": "Алі-Баба і перший розбійник",
+    "ru": "Али-Баба и первый разбойник"
+  },
+  "1001NightsSecondThief": {
+    "en": "Ali Baba and the Second Thief",
+    "uk": "Алі-Баба і другий розбійник",
+    "ru": "Али-Баба и второй разбойник"
+  },
+  "1001NightsThirdThief": {
+    "en": "Ali Baba and the Third Thief",
+    "uk": "Алі-Баба і третій розбійник",
+    "ru": "Али-Баба и третий разбойник"
+  },
+  "1001NightsTreasureKnowledge": {
+    "en": "Ali Baba and the Treasure of Knowledge",
+    "uk": "Алі-Баба і скарб знань",
+    "ru": "Али-Баба и сокровище знаний"
+  },
+  "1001NightsTreasureWisdom": {
+    "en": "Ali Baba and the Treasure of Wisdom",
+    "uk": "Алі-Баба і скарб мудрості",
+    "ru": "Али-Баба и сокровище мудрости"
+  },
+  "1001NightsBesiegedCity": {
+    "en": "Sindbad and the Besieged City",
+    "uk": "Синдбад і обложене місто",
+    "ru": "Синдбад и осажденный город"
+  },
+  "1001NightsOilLamp": {
+    "en": "Aladdin and the Oil Lamp",
+    "uk": "Аладдін і чарівна лампа",
+    "ru": "Аладдин и волшебная лампа"
+  },
+  "1001NightsSeaSnake": {
+    "en": "Sindbad and the Sea Snake",
+    "uk": "Синдбад і морський змій",
+    "ru": "Синдбад и морской змей"
+  },
+  "1001NightsPrincess": {
+    "en": "Aladdin and the Beautiful Princess",
+    "uk": "Аладдін і прекрасна принцеса",
+    "ru": "Аладдин и прекрасная принцесса"
+  },
+  "BanditNest": {
+    "en": "Bandit Nest",
+    "uk": "Лігво розбійників",
+    "ru": "Притон разбойников"
+  },
+  "NewBanditNest": {
+    "en": "Return to the Bandit's Nest",
+    "uk": "Повернення до лігва розбійників",
+    "ru": "Возвращение в притон разбойников"
+  },
+  "BountyHunterNew": {
+    "en": "Bounty Hunter",
+    "uk": "Мисливець за головами",
+    "ru": "Охотник за головами"
+  },
+  "Horseback": {
+    "en": "Horseback",
+    "uk": "Верхи на коні",
+    "ru": "Верхом на лошади"
+  },
+  "OldFriends": {
+    "en": "Old Friends",
+    "uk": "Старі друзі",
+    "ru": "Старые друзья"
+  },
+  "MotherLove": {
+    "en": "Motherly Love",
+    "uk": "Материнська любов",
+    "ru": "Материнская любовь"
+  },
+  "Outlaws": {
+    "en": "Outlaws",
+    "uk": "Поза законом",
+    "ru": "Вне закона"
+  },
+  "Gunpowder": {
+    "en": "Gunpowder",
+    "uk": "Порох",
+    "ru": "Порох"
+  },
+  "RoaringBull": {
+    "en": "Roaring Bull",
+    "uk": "Ревучий бык",
+    "ru": "Ревущий бык"
+  },
+  "SecludedExperiments": {
+    "en": "Secluded Experiments",
+    "uk": "Самотні експерименти",
+    "ru": "Уединенные эксперименты"
+  },
+  "MoreSecludedExperiments": {
+    "en": "More Secluded Experiments",
+    "uk": "Нові самотні експерименти",
+    "ru": "Новые уединенные эксперименты"
+  },
+  "SonsOfTheVeld": {
+    "en": "Sons Of The Veld",
+    "uk": "Сини степів",
+    "ru": "Сыны степей"
+  },
+  "StealingFromTheRich": {
+    "en": "Stealing From The Rich",
+    "uk": "Пограбування багатих",
+    "ru": "Ограбление богатых"
+  },
+  "StealingFromTheRich02": {
+    "en": "Desperate Rich",
+    "uk": "Зневірені багатії",
+    "ru": "Отчаявшиеся богачи"
+  },
+  "SurpriseAttack": {
+    "en": "Surprise Attack",
+    "uk": "Несподіваний напад",
+    "ru": "Внезапное нападение"
+  },
+  "TheBlackKnights": {
+    "en": "The Black Knights",
+    "uk": "Чорні лицарі",
+    "ru": "Черные рыцари"
+  },
+  "TheDarkBrotherhood": {
+    "en": "The Dark Brotherhood",
+    "uk": "Темне братство",
+    "ru": "Темное братство"
+  },
+  "TheDarkPriests": {
+    "en": "The Dark Priests",
+    "uk": "Темні священики",
+    "ru": "Темные священники"
+  },
+  "TheIslandOfThePirates": {
+    "en": "The Island Of The Pirates",
+    "uk": "Острів піратів",
+    "ru": "Остров пиратов"
+  },
+  "TheNords": {
+    "en": "The Nords",
+    "uk": "Північани",
+    "ru": "Северяне"
+  },
+  "TheNords2": {
+    "en": "The Invasion of the Nords",
+    "uk": "Вторгнення північан",
+    "ru": "Вторжение северян"
+  },
+  "TheSiege": {
+    "en": "The Siege",
+    "uk": "Облога",
+    "ru": "Осада"
+  },
+  "Traitors": {
+    "en": "Traitors",
+    "uk": "Зрадники",
+    "ru": "Предатели"
+  },
+  "Traitors02": {
+    "en": "Sir Robin's Revenge",
+    "uk": "Помста сера Робіна",
+    "ru": "Месть сэра Робина"
+  },
+  "VictorTheVicious": {
+    "en": "Victor The Vicious",
+    "uk": "Віктор Грізний",
+    "ru": "Виктор Грозный"
+  },
+  "WitchOfTheSwamp": {
+    "en": "Witch of the Swamp",
+    "uk": "Болотяна відьма",
+    "ru": "Болотная ведьма"
+  },
+  "MadHenry": {
+    "en": "Wild Mary",
+    "uk": "Дика Мері",
+    "ru": "Дикая Мэри"
+  },
+  "TheValiantLittleTailor": {
+    "en": "The Valiant Little Tailor",
+    "uk": "Хоробрий кравчик",
+    "ru": "Храбрый портняжка"
+  },
+  "TheCleverLittleTailor": {
+    "en": "The Clever Little Tailor",
+    "uk": "Розумний кравчик",
+    "ru": "Умный портняжка"
+  },
+  "TheHeroicLittleTailor": {
+    "en": "The Heroic Little Tailor",
+    "uk": "Героїчний кравчик",
+    "ru": "Геройский портняжка"
+  },
+  "TheSonsOfTheLittleTailor": {
+    "en": "The Sons of the Little Tailor",
+    "uk": "Сини кравчика",
+    "ru": "Сыновья портняжки"
+  },
+  "TheBetrayedLittleTailor": {
+    "en": "The Betrayed Little Tailor",
+    "uk": "Зраджений кравчик",
+    "ru": "Преданный портняжка"
+  },
+  "MiadArcticExplosion": {
+    "en": "Arctic Explosion",
+    "uk": "Вибух в Арктиці",
+    "ru": "Взрыв в Арктике"
+  },
+  "MiadBastilleIsland": {
+    "en": "Bastille Island",
+    "uk": "Острів Бастилія",
+    "ru": "Остров Бастилия"
+  },
+  "MiadPirateLife": {
+    "en": "Pirate Life",
+    "uk": "Піратське життя",
+    "ru": "Пиратская жизнь"
+  },
+  "MiadSleepyReef": {
+    "en": "Sleepy Reef",
+    "uk": "Сонний риф",
+    "ru": "Сонный риф"
+  },
+  "MiadTheLostSkull": {
+    "en": "The Lost Skull",
+    "uk": "Втрачений череп",
+    "ru": "Потерянный череп"
+  },
+  "MiadTheSleepingVolcano": {
+    "en": "The Sleeping Volcano",
+    "uk": "Сплячий вулкан",
+    "ru": "Спящий вулкан"
+  },
+  "MiadTikkiIsland": {
+    "en": "Tikki Island",
+    "uk": "Острів Тіккі",
+    "ru": "Остров Тикки"
+  },
+  "MiadTropicalSun": {
+    "en": "Tropical Sun",
+    "uk": "Тропічне сонце",
+    "ru": "Тропическое солнце"
+  },
+  "BonabertiBusiness": {
+    "en": "Bonaberti Business",
+    "uk": "Справа Бонаберті",
+    "ru": "Дело Бонаберти"
+  },
+  "BuccaneerRoundup": {
+    "en": "The Buccaneer Roundup",
+    "uk": "Піратська облава",
+    "ru": "Пиратская облава"
+  },
+  "RaidingTheRaiders": {
+    "en": "Raiding the Raiders",
+    "uk": "Наліт на грабіжників",
+    "ru": "Налет на налетчиков"
+  },
+  "LakesideTreasure": {
+    "en": "Lakeside Treasure",
+    "uk": "Озерний скарб",
+    "ru": "Озерное сокровище"
+  },
+  "TombRaiders": {
+    "en": "Tomb Raiders",
+    "uk": "Розкрадачі гробниць",
+    "ru": "Расхитители гробниц"
+  },
+  "Whirlwind": {
+    "en": "The Whirlwind",
+    "uk": "Вихор",
+    "ru": "Вихрь"
+  },
+  "SplitCity": {
+    "en": "Split City in Summer",
+    "uk": "Розділене місто влітку",
+    "ru": "Разделенный город летом"
+  },
+  "SplitCityFall": {
+    "en": "Split City in Fall",
+    "uk": "Розділене місто восени",
+    "ru": "Разделенный город осенью"
+  },
+  "BuffAdventures_ValuableIntel": {
+    "en": "Valuable Intel",
+    "uk": "Цінні відомості",
+    "ru": "Ценная информация"
+  },
+  "BuffAdventures_DragonsRoost": {
+    "en": "The Dragon's Roost",
+    "uk": "Притулок дракона",
+    "ru": "Пристанище дракона"
+  },
+  "BuffAdventures_OfSongsAndCurses": {
+    "en": "Of Songs and Curses",
+    "uk": "Пісні та прокляття",
+    "ru": "Песни и проклятия"
+  },
+  "BuffAdventures_RaidOfTheNords": {
+    "en": "Raid of the Nords",
+    "uk": "Рейд північан",
+    "ru": "Рейд северян"
+  },
+  "BuffAdventures_ElChupacabra": {
+    "en": "El Chupacabra",
+    "uk": "Ель Чупакабра",
+    "ru": "Эль Чупакабра"
+  },
+  "BuffAdventures_LostCity": {
+    "en": "The Lost City",
+    "uk": "Загублене місто",
+    "ru": "Затерянный город"
+  },
+  "BuffAdventures_OneStepAhead": {
+    "en": "One Step Ahead",
+    "uk": "На крок попереду",
+    "ru": "На шаг впереди"
+  },
+  "BuffAdventures_TMC_At_the_Foot_of_the_Mountain": {
+    "en": "At the Foot of the Mountain",
+    "uk": "Біля підніжжя гори",
+    "ru": "У подножия горы"
+  },
+  "BuffAdventures_TMC_Unknown_Regions": {
+    "en": "Unknown Regions",
+    "uk": "Невідомі регіони",
+    "ru": "Неизведанные регионы"
+  },
+  "BuffAdventures_TMC_Mountain_Labyrinth": {
+    "en": "Mountain Labyrinth",
+    "uk": "Гірський лабіринт",
+    "ru": "Горный лабиринт"
+  },
+  "BuffAdventures_TMC_The_People_of_the_Mountain": {
+    "en": "The People of the Mountain",
+    "uk": "Народ гір",
+    "ru": "Народ гор"
+  },
+  "BuffAdventures_TMC_A_giant_Battle": {
+    "en": "A Giant Battle",
+    "uk": "Битва гігантів",
+    "ru": "Битва гигантов"
+  },
+  "BuffAdventures_Evil_Queen_Fisherman": {
+    "en": "The Fisherman and his Wife",
+    "uk": "Рибалка та його дружина",
+    "ru": "Рыбак и его жена"
+  },
+  "BuffAdventures_Evil_Queen_Hansel_Gretel": {
+    "en": "Hansel and Gretel",
+    "uk": "Гензель і Гретель",
+    "ru": "Гензель и Гретель"
+  },
+  "BuffAdventures_Evil_Queen_Piper_of_Hamelin": {
+    "en": "The Pied Piper of Hamelin",
+    "uk": "Гамельнський щуролов",
+    "ru": "Крысолов из Гамельна"
+  },
+  "BuffAdventures_Evil_Queen_Red_Riding_Hood": {
+    "en": "Red Riding Hood",
+    "uk": "Червона Шапочка",
+    "ru": "Красная Шапочка"
+  },
+  "BuffAdventures_Evil_Queen_Snow_White": {
+    "en": "Snow White",
+    "uk": "Білосніжка",
+    "ru": "Белоснежка"
+  },
+  "EasterGarrunTrapper": {
+    "en": "Garrun the Trapper",
+    "uk": "Гаррун-звіролов",
+    "ru": "Гаррун-зверолов"
+  },
+  "Birthday2013MilitaryAdventure1ShopVersion": {
+    "en": "The Shaman",
+    "uk": "Шаман",
+    "ru": "Шаман"
+  },
+  "Birthday2013MilitaryAdventure2ShopVersion": {
+    "en": "Old Ruins",
+    "uk": "Старі руїни",
+    "ru": "Старые руины"
+  },
+  "Birthday2020CakeMap1": {
+    "en": "Misty Cake (Level 26-38)",
+    "uk": "Туманний пиріг (26-38 рів.)",
+    "ru": "Туманный пирог (26-38 ур.)"
+  },
+  "Birthday2020CakeMap2": {
+    "en": "Misty Cake (Level 39-53)",
+    "uk": "Туманний пиріг (39-53 рів.)",
+    "ru": "Туманный пирог (39-53 ур.)"
+  },
+  "Birthday2020CakeMap3": {
+    "en": "Misty Cake (Level 54+)",
+    "uk": "Туманний пиріг (54+ рів.)",
+    "ru": "Туманный пирог (54+ ур.)"
+  },
+  "HWCampaign1_Adv1": {
+    "en": "Monsters from the Mist",
+    "uk": "Монстри з туману",
+    "ru": "Монстры из тумана"
+  },
+  "HWCampaign1_Adv2": {
+    "en": "Looming Danger",
+    "uk": "Небезпека, що насувається",
+    "ru": "Надвигающаяся опасность"
+  },
+  "HWCampaign1_Adv3": {
+    "en": "The Dark Gate",
+    "uk": "Темна брама",
+    "ru": "Темные врата"
+  },
+  "HalloweenEvent_InvadingZombies": {
+    "en": "Invading Zombies",
+    "uk": "Навала зомбі",
+    "ru": "Нашествие зомби"
+  },
+  "ChristmasAdventure2013": {
+    "en": "The Stolen Sleigh",
+    "uk": "Вкрадені сани",
+    "ru": "Украденные сани"
+  },
+  "ChristmasAdventureEasy": {
+    "en": "Save the Christmas Feast",
+    "uk": "Врятуйте різдвяний бенкет",
+    "ru": "Спасите рождественский пир"
+  },
+  "XMAS_Cookie_Easy_2": {
+    "en": "Winter Wonderland (Level 26-35)",
+    "uk": "Зимова казка (26-35 рів.)",
+    "ru": "Зимняя сказка (26-35 ур.)"
+  },
+  "XMAS_Cookie_Medium_2": {
+    "en": "Winter Wonderland (Level 36-50)",
+    "uk": "Зимова казка (36-50 рів.)",
+    "ru": "Зимняя сказка (36-50 ур.)"
+  },
+  "XMAS_Cookie_Hard_2": {
+    "en": "Winter Wonderland (Level 51+)",
+    "uk": "Зимова казка (51+ рів.)",
+    "ru": "Зимняя сказка (51+ ур.)"
+  },
+  "EoWEventAdventure": {
+    "en": "The End Of The World",
+    "uk": "Кінець світу",
+    "ru": "Конец света"
+  },
+  "PartyCrashers": {
+    "en": "Party Crashers",
+    "uk": "Незвані гості",
+    "ru": "Незваные гости"
+  },
+  "Sector2": {
+    "en": "Home Island: Sector 2",
+    "uk": "Домашній острів: Сектор 2",
+    "ru": "Домашний остров: Сектор 2"
+  },
+  "Sector3": {
+    "en": "Home Island: Sector 3",
+    "uk": "Домашній острів: Сектор 3",
+    "ru": "Домашний остров: Сектор 3"
+  },
+  "Sector5": {
+    "en": "Home Island: Sector 5",
+    "uk": "Домашній острів: Сектор 5",
+    "ru": "Домашний остров: Сектор 5"
+  },
+  "Sector6": {
+    "en": "Home Island: Sector 6",
+    "uk": "Домашній острів: Сектор 6",
+    "ru": "Домашний остров: Сектор 6"
+  },
+  "Sector7": {
+    "en": "Home Island: Sector 7",
+    "uk": "Домашній острів: Сектор 7",
+    "ru": "Домашний остров: Сектор 7"
+  },
+  "Sector8": {
+    "en": "Home Island: Sector 8",
+    "uk": "Домашній острів: Сектор 8",
+    "ru": "Домашний остров: Сектор 8"
+  },
+  "Sector9": {
+    "en": "Home Island: Sector 9",
+    "uk": "Домашній острів: Сектор 9",
+    "ru": "Домашний остров: Сектор 9"
+  },
+  "SectorA2": {
+    "en": "Home Island: Archipelago A2",
+    "uk": "Домашній острів: Архіпелаг A2",
+    "ru": "Домашний остров: Архипелаг A2"
+  },
+  "SectorA3": {
+    "en": "Home Island: Archipelago A3",
+    "uk": "Домашній острів: Архіпелаг A3",
+    "ru": "Домашний остров: Архипелаг A3"
+  },
+  "SectorA4": {
+    "en": "Home Island: Archipelago A4",
+    "uk": "Домашній острів: Архіпелаг A4",
+    "ru": "Домашний остров: Архипелаг A4"
+  },
+  "SectorA5": {
+    "en": "Home Island: Archipelago A5",
+    "uk": "Домашній острів: Архіпелаг A5",
+    "ru": "Домашний остров: Архипелаг A5"
+  },
+  "SectorA6": {
+    "en": "Home Island: Archipelago A6",
+    "uk": "Домашній острів: Архіпелаг A6",
+    "ru": "Домашний остров: Архипелаг A6"
+  },
+  "SectorA7": {
+    "en": "Home Island: Archipelago A7",
+    "uk": "Домашній острів: Архіпелаг A7",
+    "ru": "Домашний остров: Архипелаг A7"
+  }
+};
+
+function tAdv(id) {
+  if (!id) return '';
+  const item = ADVENTURE_NAMES[id];
+  if (!item) return id;
+  return item[currentLang] || item.en || id;
+}
+
+function getAdventureTranslations(id) {
+  return ADVENTURE_NAMES[id] || null;
+}
+
 window.I18N_ENGINE = {
   I18N,
   UNIT_NAMES,
@@ -981,5 +1560,8 @@ window.I18N_ENGINE = {
   tReason,
   updatePageTranslations,
   updateLanguageSwitcherUI,
+  ADVENTURE_NAMES,
+  tAdv,
+  getAdventureTranslations,
 };
 })();

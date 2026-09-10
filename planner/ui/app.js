@@ -5,6 +5,8 @@ const {
   tCampType,
   tRole,
   tReason,
+  tAdv,
+  getAdventureTranslations,
   setLanguage,
   onLanguageChange,
   updatePageTranslations,
@@ -19,6 +21,8 @@ const {
   tCampType: (tp) => tp,
   tRole: (r) => r,
   tReason: (rs) => rs,
+  tAdv: (id) => id,
+  getAdventureTranslations: (id) => null,
   setLanguage: () => {},
   onLanguageChange: () => {},
   updatePageTranslations: () => {},
@@ -156,19 +160,36 @@ function matchesAdventure(advId, query) {
   if (!query) return true;
   const q = query.toLowerCase().trim();
   if (!q) return true;
-  const idLower = advId.toLowerCase();
-  if (idLower.includes(q)) return true;
-  const normId = idLower.replace(/[_\-]+/g, ' ');
-  const normQ = q.replace(/[_\-]+/g, ' ');
-  if (normId.includes(normQ)) return true;
-  const terms = normQ.split(/\s+/).filter(Boolean);
-  return terms.length > 0 && terms.every((term) => normId.includes(term) || idLower.includes(term));
+
+  const trans = getAdventureTranslations(advId) || {};
+  const enName = trans.en || '';
+  const ukName = trans.uk || '';
+  const ruName = trans.ru || '';
+  const localized = tAdv(advId);
+
+  const fullText = `${advId} ${localized} ${enName} ${ukName} ${ruName}`.toLowerCase();
+  const words = fullText.split(/[\s_\-,()]+/);
+  const terms = q.split(/[\s_\-,()]+/).filter(Boolean);
+
+  function wordMatch(w, term) {
+    if (w.includes(term) || term.includes(w)) return true;
+    const minLen = Math.min(w.length, term.length);
+    if (minLen >= 4) {
+      const prefixLen = Math.max(4, Math.floor(minLen * 0.8));
+      if (w.slice(0, prefixLen) === term.slice(0, prefixLen)) return true;
+    }
+    return false;
+  }
+
+  return terms.length > 0 && terms.every((term) => words.some((w) => wordMatch(w, term)));
 }
 
 function updateAdventureSelect(selectedId = null, query = null) {
   if (!META || !META.adventures) return;
   const q = query !== null ? query : ($('advSearch') ? $('advSearch').value : '');
-  const filtered = META.adventures.filter((a) => matchesAdventure(a.id, q));
+  const filtered = META.adventures
+    .filter((a) => matchesAdventure(a.id, q))
+    .sort((a, b) => tAdv(a.id).localeCompare(tAdv(b.id)));
   const prev = selectedId || ($('adv') ? $('adv').value : null) || S.get('adventure', null);
 
   if (filtered.length === 0) {
@@ -177,7 +198,7 @@ function updateAdventureSelect(selectedId = null, query = null) {
   }
 
   $('adv').innerHTML = filtered
-    .map((a) => `<option value="${a.id}">${a.id} (${t('camp.suffix', { camps: a.camps })})</option>`)
+    .map((a) => `<option value="${a.id}">${tAdv(a.id)} (${t('camp.suffix', { camps: a.camps })})</option>`)
     .join('');
 
   const filteredIds = filtered.map((a) => a.id);
@@ -197,9 +218,10 @@ function filterAdventures(query) {
 }
 
 function updateDockSummary() {
-  const adv = $('adv') ? $('adv').value : '—';
-  if ($('dockAdvLabel')) $('dockAdvLabel').textContent = adv;
-  if ($('mobileAdventureName')) $('mobileAdventureName').textContent = adv;
+  const adv = $('adv') ? $('adv').value : '';
+  const advName = adv ? tAdv(adv) : '—';
+  if ($('dockAdvLabel')) $('dockAdvLabel').textContent = advName;
+  if ($('mobileAdventureName')) $('mobileAdventureName').textContent = advName;
 }
 
 async function init() {
@@ -248,9 +270,11 @@ async function init() {
   // Re-render views when language changes
   onLanguageChange(() => {
     updateAdventureSelect();
+    updateDockSummary();
     renderCampButtons();
     renderQueue();
     renderUnits();
+    updateMapModalIfOpen();
     if (GENERALS.length) {
       $('genHint').innerHTML = t('gen.hint.loaded', { count: GENERALS.length });
       filterGenerals($('genSearch') ? $('genSearch').value : '');
@@ -273,6 +297,7 @@ async function init() {
       document.querySelectorAll('.side-tab-btn').forEach((b) => b.classList.remove('active'));
       document.querySelectorAll('.side-pane').forEach((p) => p.classList.remove('active'));
       btn.classList.add('active');
+      btn.scrollIntoView({ behavior: 'smooth', inline: 'nearest', block: 'nearest' });
       const targetPane = $('pane-' + btn.dataset.tab);
       if (targetPane) targetPane.classList.add('active');
     };
@@ -322,6 +347,8 @@ async function init() {
     QUEUE = QUEUE.filter((x) => x !== Number(c.dataset.n));
     syncQueue();
   };
+
+  initMapModal();
 
   // Segmented controls event binding
   bindSegmentedControl('ctrlGenUsage', (val) => { SETTINGS.genUsage = val; S.set('genUsage', val); });
@@ -400,19 +427,24 @@ function setMobileTab(tab) {
 async function loadAdventureInfo() {
   const id = $('adv').value;
   if (!id) return;
-  const { camps } = await (await fetch('/api/adventure?id=' + encodeURIComponent(id))).json();
-  window.CAMPS = camps;
+  const res = await (await fetch('/api/adventure?id=' + encodeURIComponent(id))).json();
+  window.CAMPS = res.camps;
+  window.CURRENT_MAP = res.map || null;
   
   queueFromText();
-  const valid = QUEUE.filter((n) => n >= 1 && n <= camps.length);
+  const valid = QUEUE.filter((n) => n >= 1 && n <= res.camps.length);
   if (valid.length !== QUEUE.length) {
     QUEUE = valid;
     syncQueue();
   } else {
     renderCampButtons();
     renderQueue();
+    updateMapModalIfOpen();
   }
   updateDockSummary();
+  if ($('adventureMapModal') && $('adventureMapModal').open) {
+    loadMapImageAndRender();
+  }
 }
 
 // --- Camp kinds and Attack Queue -------------------------------------------
@@ -473,6 +505,7 @@ function syncQueue(writeInput = true) {
   }
   renderCampButtons();
   renderQueue();
+  updateMapModalIfOpen();
 }
 
 function queueFromText() {
@@ -480,6 +513,461 @@ function queueFromText() {
     .map(Number).filter((n) => Number.isFinite(n) && n > 0);
   QUEUE = [...new Set(nums)];
   syncQueue(false);
+}
+
+// --- Interactive Adventure Map Modal Controller ----------------------------
+const mapState = {
+  zoom: 1,
+  panX: 0,
+  panY: 0,
+  isPanning: false,
+  startX: 0,
+  startY: 0,
+};
+
+function initMapModal() {
+  const modal = $('adventureMapModal');
+  if (!modal) return;
+
+  const openButtons = [$('btnOpenMap'), $('btnOpenMapSecondary')];
+  openButtons.forEach((btn) => {
+    if (btn) btn.onclick = () => openMapModal();
+  });
+
+  const closeButtons = [$('btnMapClose'), $('btnMapDone')];
+  closeButtons.forEach((btn) => {
+    if (btn) btn.onclick = () => closeMapModal();
+  });
+
+  modal.addEventListener('cancel', () => closeMapModal());
+
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) closeMapModal();
+  });
+
+  if ($('btnMapAll')) {
+    $('btnMapAll').onclick = () => {
+      QUEUE = (window.CAMPS || []).map((c) => c.number);
+      syncQueue();
+    };
+  }
+  if ($('btnMapClear')) {
+    $('btnMapClear').onclick = () => {
+      QUEUE = [];
+      syncQueue();
+    };
+  }
+
+  if ($('btnMapZoomIn')) $('btnMapZoomIn').onclick = () => adjustMapZoom(0.25);
+  if ($('btnMapZoomOut')) $('btnMapZoomOut').onclick = () => adjustMapZoom(-0.25);
+  if ($('btnMapZoomReset')) $('btnMapZoomReset').onclick = () => resetMapTransform();
+
+  const strip = $('mapQueueStrip');
+  if (strip) {
+    strip.onclick = (e) => {
+      const chip = e.target.closest('.qchip');
+      if (!chip) return;
+      const n = Number(chip.dataset.n);
+      QUEUE = QUEUE.filter((x) => x !== n);
+      syncQueue();
+    };
+  }
+
+  const viewport = $('mapViewport');
+  if (viewport) {
+    viewport.addEventListener('mousedown', (e) => {
+      if (e.target.closest('.map-camp-pin')) return;
+      e.preventDefault();
+      mapState.isPanning = true;
+      mapState.startX = e.clientX - mapState.panX;
+      mapState.startY = e.clientY - mapState.panY;
+      viewport.classList.add('is-panning');
+    });
+
+    window.addEventListener('mousemove', (e) => {
+      if (!mapState.isPanning) return;
+      mapState.panX = e.clientX - mapState.startX;
+      mapState.panY = e.clientY - mapState.startY;
+      applyMapTransform();
+    });
+
+    window.addEventListener('mouseup', () => {
+      if (mapState.isPanning) {
+        mapState.isPanning = false;
+        viewport.classList.remove('is-panning');
+      }
+    });
+
+    viewport.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      const rect = viewport.getBoundingClientRect();
+      const mouseX = e.clientX - rect.left;
+      const mouseY = e.clientY - rect.top;
+
+      const prevZoom = mapState.zoom;
+      const factor = e.deltaY < 0 ? 1.15 : 1 / 1.15;
+      const newZoom = Math.min(Math.max(0.1, prevZoom * factor), 5.0);
+
+      const stageX = (mouseX - mapState.panX) / prevZoom;
+      const stageY = (mouseY - mapState.panY) / prevZoom;
+      mapState.zoom = newZoom;
+      mapState.panX = mouseX - stageX * newZoom;
+      mapState.panY = mouseY - stageY * newZoom;
+
+      applyMapTransform();
+    }, { passive: false });
+
+    // Mobile & Tablet Touch Support (drag and pinch-to-zoom)
+    let touchStartDist = 0;
+    let touchStartZoom = 1;
+    let isTouchPinching = false;
+
+    viewport.addEventListener('touchstart', (e) => {
+      if (e.target.closest('.map-camp-pin')) return;
+      if (e.touches.length === 1) {
+        isTouchPinching = false;
+        mapState.isPanning = true;
+        mapState.startX = e.touches[0].clientX - mapState.panX;
+        mapState.startY = e.touches[0].clientY - mapState.panY;
+        viewport.classList.add('is-panning');
+      } else if (e.touches.length === 2) {
+        isTouchPinching = true;
+        mapState.isPanning = false;
+        const t0 = e.touches[0];
+        const t1 = e.touches[1];
+        touchStartDist = Math.hypot(t1.clientX - t0.clientX, t1.clientY - t0.clientY);
+        touchStartZoom = mapState.zoom;
+      }
+    }, { passive: true });
+
+    viewport.addEventListener('touchmove', (e) => {
+      if (e.touches.length === 1 && mapState.isPanning && !isTouchPinching) {
+        mapState.panX = e.touches[0].clientX - mapState.startX;
+        mapState.panY = e.touches[0].clientY - mapState.startY;
+        applyMapTransform();
+      } else if (e.touches.length === 2 && isTouchPinching) {
+        const t0 = e.touches[0];
+        const t1 = e.touches[1];
+        const dist = Math.hypot(t1.clientX - t0.clientX, t1.clientY - t0.clientY);
+        if (touchStartDist > 0) {
+          const factor = dist / touchStartDist;
+          const newZoom = Math.min(Math.max(0.1, touchStartZoom * factor), 5.0);
+
+          const rect = viewport.getBoundingClientRect();
+          const centerX = (t0.clientX + t1.clientX) / 2 - rect.left;
+          const centerY = (t0.clientY + t1.clientY) / 2 - rect.top;
+          const prevZoom = mapState.zoom;
+          const stageX = (centerX - mapState.panX) / prevZoom;
+          const stageY = (centerY - mapState.panY) / prevZoom;
+
+          mapState.zoom = newZoom;
+          mapState.panX = centerX - stageX * newZoom;
+          mapState.panY = centerY - stageY * newZoom;
+          applyMapTransform();
+        }
+      }
+    }, { passive: true });
+
+    viewport.addEventListener('touchend', (e) => {
+      if (e.touches.length === 0) {
+        mapState.isPanning = false;
+        isTouchPinching = false;
+        viewport.classList.remove('is-panning');
+      } else if (e.touches.length === 1) {
+        isTouchPinching = false;
+        mapState.isPanning = true;
+        mapState.startX = e.touches[0].clientX - mapState.panX;
+        mapState.startY = e.touches[0].clientY - mapState.panY;
+      }
+    }, { passive: true });
+  }
+
+  const pinsLayer = $('mapPins');
+  if (pinsLayer) {
+    pinsLayer.onclick = (e) => {
+      const pin = e.target.closest('.map-camp-pin');
+      if (!pin) return;
+      const n = Number(pin.dataset.n);
+      QUEUE = QUEUE.includes(n) ? QUEUE.filter((x) => x !== n) : [...QUEUE, n];
+      syncQueue();
+      updatePinTooltip(n, pin);
+    };
+
+    pinsLayer.addEventListener('mouseover', (e) => {
+      const pin = e.target.closest('.map-camp-pin');
+      if (!pin) return;
+      const n = Number(pin.dataset.n);
+      updatePinTooltip(n, pin);
+    });
+
+    pinsLayer.addEventListener('mouseout', (e) => {
+      const pin = e.target.closest('.map-camp-pin');
+      if (!pin) return;
+      const rel = e.relatedTarget;
+      if (rel && pin.contains(rel)) return;
+      const tooltip = $('mapPinTooltip');
+      if (tooltip) tooltip.classList.remove('visible');
+    });
+  }
+}
+
+function openMapModal() {
+  const modal = $('adventureMapModal');
+  if (!modal) return;
+
+  const advId = $('adv').value;
+  if (!advId) {
+    alert(t('pane.camps.notFound'));
+    return;
+  }
+
+  const advTitleEl = $('mapModalAdvTitle');
+  if (advTitleEl) advTitleEl.textContent = tAdv(advId);
+
+  modal.showModal();
+  loadMapImageAndRender();
+}
+
+function closeMapModal() {
+  const modal = $('adventureMapModal');
+  if (!modal) return;
+  if (modal.open) modal.close();
+  const tooltip = $('mapPinTooltip');
+  if (tooltip) tooltip.classList.remove('visible');
+}
+
+function resetMapTransform() {
+  const viewport = $('mapViewport');
+  const mapData = window.CURRENT_MAP;
+  if (!viewport || !mapData || !mapData.width || !mapData.height) {
+    mapState.zoom = 1;
+    mapState.panX = 0;
+    mapState.panY = 0;
+    applyMapTransform();
+    return;
+  }
+
+  const vWidth = viewport.clientWidth || 1000;
+  const vHeight = viewport.clientHeight || 700;
+  const mWidth = mapData.width;
+  const mHeight = mapData.height;
+
+  const scaleX = (vWidth - 32) / mWidth;
+  const scaleY = (vHeight - 32) / mHeight;
+  const fitZoom = Math.min(scaleX, scaleY, 1.0);
+
+  mapState.zoom = Math.max(fitZoom, 0.1);
+  mapState.panX = Math.round((vWidth - mWidth * mapState.zoom) / 2);
+  mapState.panY = Math.round((vHeight - mHeight * mapState.zoom) / 2);
+
+  applyMapTransform();
+}
+
+function adjustMapZoom(delta) {
+  const viewport = $('mapViewport');
+  if (!viewport) return;
+  const vWidth = viewport.clientWidth;
+  const vHeight = viewport.clientHeight;
+  const prevZoom = mapState.zoom;
+  const newZoom = Math.min(Math.max(0.1, prevZoom + delta), 5.0);
+
+  const centerX = vWidth / 2;
+  const centerY = vHeight / 2;
+  const stageX = (centerX - mapState.panX) / prevZoom;
+  const stageY = (centerY - mapState.panY) / prevZoom;
+
+  mapState.zoom = newZoom;
+  mapState.panX = centerX - stageX * newZoom;
+  mapState.panY = centerY - stageY * newZoom;
+
+  applyMapTransform();
+}
+
+function applyMapTransform() {
+  const stage = $('mapStage');
+  if (stage) {
+    stage.style.transform = `translate(${mapState.panX}px, ${mapState.panY}px) scale(${mapState.zoom})`;
+  }
+  const resetBtn = $('btnMapZoomReset');
+  if (resetBtn) {
+    resetBtn.textContent = `${Math.round(mapState.zoom * 100)}%`;
+  }
+}
+
+function loadMapImageAndRender() {
+  const mapData = window.CURRENT_MAP;
+  const img = $('mapImage');
+  const loading = $('mapLoading');
+  const stage = $('mapStage');
+
+  if (!mapData || !mapData.key) {
+    if (loading) loading.classList.remove('visible');
+    renderMapPins();
+    updateMapModalIfOpen();
+    return;
+  }
+
+  if (loading) loading.classList.add('visible');
+
+  stage.style.width = `${mapData.width}px`;
+  stage.style.height = `${mapData.height}px`;
+
+  const mapSrc = `/api/map-image?key=${encodeURIComponent(mapData.key)}`;
+  if (img.getAttribute('data-loaded-key') === mapData.key && img.complete) {
+    if (loading) loading.classList.remove('visible');
+    resetMapTransform();
+    renderMapPins();
+    updateMapModalIfOpen();
+    return;
+  }
+
+  img.onload = () => {
+    img.setAttribute('data-loaded-key', mapData.key);
+    if (loading) loading.classList.remove('visible');
+    resetMapTransform();
+    renderMapPins();
+    updateMapModalIfOpen();
+  };
+
+  img.onerror = () => {
+    if (loading) loading.classList.remove('visible');
+    alert(t('mapModal.loadError'));
+    renderMapPins();
+    updateMapModalIfOpen();
+  };
+
+  img.src = mapSrc;
+}
+
+function renderMapPins() {
+  const container = $('mapPins');
+  if (!container) return;
+
+  const mapData = window.CURRENT_MAP;
+  const camps = window.CAMPS || [];
+  if (!mapData || !mapData.width || !mapData.height) {
+    container.innerHTML = '';
+    return;
+  }
+
+  const w = mapData.width;
+  const h = mapData.height;
+
+  container.innerHTML = camps.filter((c) => c.position && c.position.x !== undefined).map((c) => {
+    const pos = QUEUE.indexOf(c.number);
+    const isQueued = pos >= 0;
+    const leftPct = (100 * c.position.x / w).toFixed(3);
+    const topPct = (100 * c.position.y / h).toFixed(3);
+    const typeClass = c.type === 'Leader' ? 'type-leader' : (c.type === 'Medium' ? 'type-medium' : 'type-normal');
+
+    return `
+      <div class="map-camp-pin ${typeClass}${isQueued ? ' is-queued' : ''}"
+           data-n="${c.number}"
+           style="left: ${leftPct}%; top: ${topPct}%;">
+        <span>${c.number}</span>
+        ${isQueued ? `<span class="pin-order-badge">${pos + 1}</span>` : ''}
+      </div>
+    `;
+  }).join('');
+}
+
+function updatePinTooltip(campNum, pinEl) {
+  const tooltip = $('mapPinTooltip');
+  const viewport = $('mapViewport');
+  if (!tooltip || !viewport) return;
+
+  const c = (window.CAMPS || []).find((x) => x.number === campNum);
+  if (!c) return;
+
+  const pos = QUEUE.indexOf(c.number);
+  const isQueued = pos >= 0;
+  const statusHtml = isQueued
+    ? `<span style="color:#60a5fa;">${t('mapModal.statusSelected', { order: pos + 1 })}</span>`
+    : `<span style="color:var(--text-muted);">${t('mapModal.statusUnselected')}</span>`;
+
+  const unitRows = (c.units || []).map((u) => {
+    const iconUrl = getUnitIconUrl(u.id);
+    const unitName = tUnit(u.id);
+    const iconHtml = iconUrl ? `<img src="${iconUrl}" class="unit-icon" alt="${unitName}" style="width:16px; height:16px; border-radius:3px;">` : '';
+    return `
+      <div class="tooltip-unit-item">
+        <div class="tooltip-unit-info">
+          ${iconHtml}
+          <span>${unitName}</span>
+        </div>
+        <b class="font-mono">${u.amount}</b>
+      </div>
+    `;
+  }).join('');
+
+  const campTitle = `${t('pane.camps.title')} #${c.number} (Sector ${c.sector})`;
+
+  tooltip.innerHTML = `
+    <div class="tooltip-header">
+      <div class="tooltip-camp-title font-mono">${campTitle}</div>
+      <div class="tooltip-camp-type ${campKind(c.type)}">${tCampType(c.type)}</div>
+    </div>
+    <div class="tooltip-unit-list">
+      ${unitRows || '<div class="dim">—</div>'}
+    </div>
+    <div class="tooltip-status">
+      ${statusHtml}
+    </div>
+  `;
+
+  tooltip.classList.add('visible');
+
+  const pinRect = pinEl.getBoundingClientRect();
+  const vRect = viewport.getBoundingClientRect();
+  const tWidth = tooltip.offsetWidth || 220;
+  const tHeight = tooltip.offsetHeight || 140;
+
+  let left = pinRect.left - vRect.left + pinRect.width / 2 - tWidth / 2;
+  let top = pinRect.top - vRect.top - tHeight - 10;
+
+  if (top < 10) {
+    top = pinRect.bottom - vRect.top + 10;
+  }
+  if (left < 10) left = 10;
+  if (left + tWidth > vRect.width - 10) {
+    left = vRect.width - tWidth - 10;
+  }
+
+  tooltip.style.left = `${Math.round(left)}px`;
+  tooltip.style.top = `${Math.round(top)}px`;
+}
+
+function updateMapModalIfOpen() {
+  const modal = $('adventureMapModal');
+  if (!modal || !modal.open) return;
+
+  const advId = $('adv') ? $('adv').value : '';
+  const advTitleEl = $('mapModalAdvTitle');
+  if (advTitleEl && advId) {
+    advTitleEl.textContent = tAdv(advId);
+  }
+
+  const total = (window.CAMPS || []).length;
+  const selected = QUEUE.length;
+  const countBadge = $('mapModalQueueCount');
+  if (countBadge) {
+    countBadge.textContent = `${selected} / ${total}`;
+  }
+
+  renderMapPins();
+
+  const strip = $('mapQueueStrip');
+  if (strip) {
+    strip.innerHTML = selected
+      ? QUEUE.map((n, i) => `
+          <span class="qchip" data-n="${n}" title="${t('pane.camps.clear')}">
+            <span>${i + 1}.</span>
+            <b>${n}</b>
+            <span class="qchip-close">✕</span>
+          </span>
+        `).join('')
+      : `<span class="dim" style="font-size:11px; padding:4px;">${t('pane.camps.queueEmpty')}</span>`;
+  }
 }
 
 // --- Troops / Stock --------------------------------------------------------
