@@ -5,6 +5,7 @@
   "type": "commonjs",
   "scripts": {
     "build": "node scripts/build.js",
+    "sync": "node scripts/sync.js",
     "start": "node planner/server.js",
     "download:maps": "node planner/download_maps.js"
   }
