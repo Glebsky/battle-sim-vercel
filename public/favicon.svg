@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <linearGradient id="favBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3b82f6"/>
+      <stop offset="100%" stop-color="#1d4ed8"/>
+    </linearGradient>
+    <linearGradient id="topPolyFill" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0.1"/>
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="1.5" stdDeviation="1.5" flood-color="#0f172a" flood-opacity="0.5"/>
+    </filter>
+  </defs>
+
+  <!-- Background tile with subtle border -->
+  <rect width="64" height="64" rx="15" fill="url(#favBg)"/>
+  <rect x="0.75" y="0.75" width="62.5" height="62.5" rx="14.25" fill="none" stroke="#60a5fa" stroke-width="1.5" stroke-opacity="0.6"/>
+
+  <!-- Tactical Chevrons / Rank Icon -->
+  <g filter="url(#shadow)">
+    <!-- Top Cap (Polygon) -->
+    <polygon points="32 10, 10 21, 32 32, 54 21" 
+             fill="url(#topPolyFill)" 
+             stroke="#ffffff" 
+             stroke-width="4.5" 
+             stroke-linecap="round" 
+             stroke-linejoin="round"/>
+    
+    <!-- Middle Chevron -->
+    <polyline points="10 32, 32 43, 54 32" 
+              fill="none" 
+              stroke="#ffffff" 
+              stroke-width="4.5" 
+              stroke-linecap="round" 
+              stroke-linejoin="round"/>
+
+    <!-- Bottom Chevron -->
+    <polyline points="10 43, 32 54, 54 43" 
+              fill="none" 
+              stroke="#ffffff" 
+              stroke-width="4.5" 
+              stroke-linecap="round" 
+              stroke-linejoin="round"/>
+  </g>
+</svg>
