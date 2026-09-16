@@ -64,30 +64,30 @@ const I18N = {
     'gen.hint.loaded': 'Loaded: <b>{count}</b> generals. Capacity and skills included.',
     'gen.hint.error': 'Error: {msg}',
 
-    // Pane 3: Troops & Stock
-    'pane.troops.title': 'Troops & Stock',
+    // Pane 3: Troops & Garrison
+    'pane.troops.title': 'Troops & Garrison',
     'pane.troops.presetElite': 'Elite',
     'pane.troops.presetAll': 'All',
     'unit.th.unit': 'Unit',
     'unit.th.use': 'Use',
     'unit.th.noLoss': 'No Loss',
-    'unit.th.stock': 'Stock',
+    'unit.th.stock': 'Garrison',
     'unit.tooltip.noLoss.title': '«No Loss» Mode (noLoss)',
     'unit.tooltip.noLoss.body': 'Strictly protects this unit from any loss. The unit will never be used in a sacrificial opener wave and will only be deployed for guaranteed 100% victories with 0 losses.',
-    'unit.tooltip.stock.title': 'Troop Stock Limit',
-    'unit.tooltip.stock.body': 'Maximum number of units available in total across all generals in a single wave. Empty field = unlimited.',
+    'unit.tooltip.stock.title': 'Troop Garrison Limit',
+    'unit.tooltip.stock.body': 'Maximum number of units available in the garrison across all generals in a single wave. Empty field = unlimited.',
 
     // Pane 4: Algorithm Settings
     'pane.settings.title': 'Algorithm Settings',
     'settings.genUsage.label': 'General usage mode',
     'settings.genUsage.tooltipTitle': 'General Usage Strategy',
-    'settings.genUsage.tooltipMax': '<b>Maximum (speed)</b>: primary goal is to clear the maximum number of camps in a single wave to minimize total waves in the adventure. Solos easy camps and squads hard camps.',
-    'settings.genUsage.tooltipMin': '<b>Minimum (conserve)</b>: primary goal is to preserve generals and troops without inflating wave sizes.',
+    'settings.genUsage.tooltipMin': '<b>Minimum (conserve)</b> — Priority 1: troop and general preservation. Does not rush to clear all camps in one wave. Prioritizes the safest, lowest-cost lineups with minimal casualties (lostValue), avoiding risky opener wipes and 2-hour general cooldowns.',
+    'settings.genUsage.tooltipMax': '<b>Maximum (speed)</b> — Priority 1: clear the maximum number of camps in parallel per wave to finish the adventure in minimal waves (e.g. 18 camps in 2 waves). Conserves generals on easy camps (solo) to deploy multi-general squads against bosses and fortified camps.',
     'settings.genUsage.min': 'Minimum (conserve)',
     'settings.genUsage.max': 'Maximum (speed)',
 
-    'settings.lossAcc.label': 'Stock loss accounting',
-    'settings.lossAcc.tooltipTitle': 'Stock Loss Accounting',
+    'settings.lossAcc.label': 'Garrison loss deduction',
+    'settings.lossAcc.tooltipTitle': 'Garrison Loss Deduction',
     'settings.lossAcc.tooltipMax': '<b>Worst-case (max)</b>: deducts maximum damage observed across all simulation runs. Guarantees the army will never run out of troops due to bad RNG.',
     'settings.lossAcc.tooltipAvg': '<b>Average (avg)</b>: deducts expected statistical average losses.',
     'settings.lossAcc.max': 'Worst-case (max)',
@@ -149,21 +149,28 @@ const I18N = {
     'result.btnCopy': 'Copy plan',
     'result.bento.waves': 'Waves',
     'result.bento.lostValue': 'Lost value',
+    'result.bento.lostUnits': 'Troop losses',
+    'result.bento.unitsUnit': 'units',
+    'result.bento.noLosses': 'No losses',
     'result.bento.generals': 'Generals deployed',
     'result.bento.calcTime': 'Calc time',
     'result.unlimited': 'unlimited',
+    'result.recovery.title': 'Barracks Resource Recovery',
+    'result.recovery.units': 'Casualties:',
+    'result.recovery.resources': 'Resources needed to restock barracks:',
+    'result.recovery.tooltip': '{count} {unit}: requires {res}',
     'result.error.title': 'Failed to build plan',
     'result.error.calcTitle': 'Calculation error',
 
     // Wave Cards
     'wave.badge': 'Wave {num}',
     'wave.campsParallel': '{count} camps simultaneously',
-    'wave.stockBefore': 'Stock before: {stock}',
+    'wave.stockBefore': 'Garrison before: {stock}',
     'wave.cooldown': '⏳ Cooldown 2h',
     'wave.cooldownDesc': '<b>{list}</b> (fallen and excluded from subsequent waves)',
     'wave.freeRevive': '✨ Free revive',
     'wave.freeReviveDesc': '<b>{list}</b> (revived via 1-UP / talent and ready for next wave)',
-    'wave.stockAfter': 'Stock remaining: {stock}',
+    'wave.stockAfter': 'Garrison remaining: {stock}',
     'wave.armiesUsed': 'Armies deployed: {stock}',
     'wave.lossesDeducted': 'Losses written off: {stock}',
     'wave.blocker': 'Wave ended: camp {num} — {reason} (requires squad of {need} gen.)',
@@ -209,13 +216,15 @@ const I18N = {
     'role.attack': 'attack',
 
     // Reasons
-    'reason.stock': 'not enough restricted units in stock',
+    'reason.stock': 'not enough restricted units in garrison',
     'reason.generals': 'no available generals of required capacity',
-    'reason.both': 'both generals and unit stock exhausted',
+    'reason.both': 'both generals and unit garrison exhausted',
 
     // Clipboard plan text
     'plan.header': '=== BATTLE PLAN: {adv} ===',
     'plan.summary': 'Waves: {waves} | Lost value: {losses}',
+    'plan.lossesSummary': 'Troop casualties: {units}',
+    'plan.resourcesSummary': 'Resources needed to restock: {res}',
     'plan.waveHeader': '--- WAVE {wave} ({camps} camps) ---',
     'plan.cdLabel': '[Cooldown 2h]: {list}',
     'plan.reviveLabel': '[Free revive]: {list}',
@@ -285,30 +294,30 @@ const I18N = {
     'gen.hint.loaded': 'Завантажено: <b>{count}</b> генералів. Місткість та навички враховано.',
     'gen.hint.error': 'Помилка: {msg}',
 
-    // Pane 3: Troops & Stock
-    'pane.troops.title': 'Війська та склад',
+    // Pane 3: Troops & Garrison
+    'pane.troops.title': 'Війська та гарнізон',
     'pane.troops.presetElite': 'Елітні',
     'pane.troops.presetAll': 'Всі',
     'unit.th.unit': 'Юніт',
     'unit.th.use': 'Вик.',
     'unit.th.noLoss': 'Без втрат',
-    'unit.th.stock': 'Склад',
+    'unit.th.stock': 'Гарнізон',
     'unit.tooltip.noLoss.title': 'Режим «Без втрат» (noLoss)',
     'unit.tooltip.noLoss.body': 'Суворо захищає юніта від будь-яких втрат. Юніт ніколи не потрапить у жертовну хвилю відкриття і буде використовуватися лише за гарантованої 100% перемоги з 0 втрат.',
-    'unit.tooltip.stock.title': 'Ліміт складу військ',
-    'unit.tooltip.stock.body': 'Максимальна кількість юнітів, доступних сумарно для всіх генералів однієї хвилі. Порожнє поле = без обмежень.',
+    'unit.tooltip.stock.title': 'Ліміт гарнізону військ',
+    'unit.tooltip.stock.body': 'Максимальна кількість юнітів, доступних у гарнізоні для всіх генералів однієї хвилі. Порожнє поле = без обмежень.',
 
     // Pane 4: Algorithm Settings
     'pane.settings.title': 'Параметри алгоритму',
     'settings.genUsage.label': 'Режим генералів',
-    'settings.genUsage.tooltipTitle': 'Режим використання генералів',
-    'settings.genUsage.tooltipMax': '<b>Максимум</b>: головна мета — знищити максимум таборів за 1 хвилю і скоротити хвилі у всій пригоді (наприклад, вкластися у 2 хвилі). На легких таборах економляться генерали (соло), а на складних використовуються загони.',
-    'settings.genUsage.tooltipMin': '<b>Мінімум</b>: головна мета — максимальне збереження генералів і військ без роздування хвилі.',
+    'settings.genUsage.tooltipTitle': 'Стратегія використання генералів',
+    'settings.genUsage.tooltipMin': '<b>Мінімум (берегти)</b> — пріоритет №1: збереження генералів та військ. Алгоритм не прагне зачистити всі табори за одну хвилю будь-якою ціною. Обираються найбільш надійні та дешеві склади з мінімальними втратами (lostValue). Виключаються зайві жертви та ризик 2-годинного відкату генералів.',
+    'settings.genUsage.tooltipMax': '<b>Максимум (швидкість)</b> — пріоритет №1: знищити максимум таборів паралельно за одну хвилю і мінімізувати число хвиль у пригоді (наприклад, пройти всю мапу за 2 хвилі). Заощаджує генералів на легких таборах (соло), щоб сформувати потужні ударні загони (squads) для босів.',
     'settings.genUsage.min': 'Мінімум (берегти)',
-    'settings.genUsage.max': 'Максимум (пройти)',
+    'settings.genUsage.max': 'Максимум (швидкість)',
 
-    'settings.lossAcc.label': 'Списання втрат зі складу',
-    'settings.lossAcc.tooltipTitle': 'Списання втрат зі складу',
+    'settings.lossAcc.label': 'Списання втрат з гарнізону',
+    'settings.lossAcc.tooltipTitle': 'Списання втрат з гарнізону',
     'settings.lossAcc.tooltipMax': '<b>За найгіршим (max)</b>: списує максимальну шкоду з усіх прогонів симулятора. Гарантує, що армія не залишиться без військ при невдалому рандомі.',
     'settings.lossAcc.tooltipAvg': '<b>За середнім (avg)</b>: списує середнє маточікування втрат.',
     'settings.lossAcc.max': 'За гіршим (max)',
@@ -370,22 +379,29 @@ const I18N = {
     'result.btnCopy': 'Скопіювати план',
     'result.bento.waves': 'Хвиль',
     'result.bento.lostValue': 'Вартість втрат',
+    'result.bento.lostUnits': 'Втрати військ',
+    'result.bento.unitsUnit': 'юн.',
+    'result.bento.noLosses': 'Без втрат',
     'result.bento.generals': 'Генералів задіяно',
     'result.bento.calcTime': 'Час розрахунку',
     'result.unlimited': 'без обмежень',
+    'result.recovery.title': 'Ресурси на відновлення (Казарма)',
+    'result.recovery.units': 'Втрачені війська:',
+    'result.recovery.resources': 'Необхідно для найму в казармі:',
+    'result.recovery.tooltip': '{count} {unit}: потрібно {res}',
     'result.error.title': 'Не вдалося побудувати план',
     'result.error.calcTitle': 'Помилка розрахунку',
 
     // Wave Cards
     'wave.badge': 'Хвиля {num}',
     'wave.campsParallel': '{count} таборів одночасно',
-    'wave.stockBefore': 'Склад до: {stock}',
+    'wave.stockBefore': 'Гарнізон до: {stock}',
     'wave.cooldown': '⏳ Відкат 2 години',
     'wave.cooldownDesc': '<b>{list}</b> (загинули та вибули з наступних хвиль)',
     'wave.freeRevive': '✨ Безкоштовне воскресіння',
     'wave.freeReviveDesc': '<b>{list}</b> (воскресли за властивістю 1-UP / навичкою і готові до наступної хвилі)',
-    'wave.stockAfter': 'Залишок на складі: {stock}',
-    'wave.armiesUsed': 'Задіяно армій: {stock}',
+    'wave.stockAfter': 'Залишок у гарнізоні: {stock}',
+    'wave.armiesUsed': 'Виведено армій: {stock}',
     'wave.lossesDeducted': 'Списано втрат: {stock}',
     'wave.blocker': 'Хвиля завершена: табір {num} — {reason} (потрібен загін з {need} ген.)',
 
@@ -430,13 +446,15 @@ const I18N = {
     'role.attack': 'атака',
 
     // Reasons
-    'reason.stock': 'не вистачає запасу обмежених юнітів',
+    'reason.stock': 'не вистачає юнітів у гарнізоні',
     'reason.generals': 'немає вільних генералів потрібної місткості',
-    'reason.both': 'закінчилися і вільні генерали, і запас юнітів',
+    'reason.both': 'вичерпано генералів та гарнізон військ',
 
     // Clipboard plan text
     'plan.header': '=== ПЛАН БОЮ: {adv} ===',
     'plan.summary': 'Хвиль: {waves} | Втрати: {losses}',
+    'plan.lossesSummary': 'Втрати військ: {units}',
+    'plan.resourcesSummary': 'Ресурси на відновлення: {res}',
     'plan.waveHeader': '--- ХВИЛЯ {wave} ({camps} таб.) ---',
     'plan.cdLabel': '[Відкат 2г]: {list}',
     'plan.reviveLabel': '[Безкоштовне воскресіння]: {list}',
@@ -506,30 +524,30 @@ const I18N = {
     'gen.hint.loaded': 'Загружено: <b>{count}</b> генералов. Вместимость и навыки учтены.',
     'gen.hint.error': 'Ошибка: {msg}',
 
-    // Pane 3: Troops & Stock
-    'pane.troops.title': 'Войска и склад',
+    // Pane 3: Troops & Garrison
+    'pane.troops.title': 'Войска и гарнизон',
     'pane.troops.presetElite': 'Элитные',
     'pane.troops.presetAll': 'Все',
     'unit.th.unit': 'Юнит',
     'unit.th.use': 'Исп.',
     'unit.th.noLoss': 'Без потерь',
-    'unit.th.stock': 'Склад',
+    'unit.th.stock': 'Гарнизон',
     'unit.tooltip.noLoss.title': 'Режим «Без потерь» (noLoss)',
     'unit.tooltip.noLoss.body': 'Строго защищает юнита от любых потерь. Юнит никогда не попадёт во вскрывающую/жертвенную волну и будет использоваться только при гарантированной 100% победе с 0 потерь.',
-    'unit.tooltip.stock.title': 'Лимит склада войск',
-    'unit.tooltip.stock.body': 'Максимальное количество юнитов, доступных суммарно для всех генералов одной волны. Пустое поле = без ограничений.',
+    'unit.tooltip.stock.title': 'Лимит гарнизона войск',
+    'unit.tooltip.stock.body': 'Максимальное количество юнитов, доступных в гарнизоне суммарно для всех генералов одной волны. Пустое поле = без ограничений.',
 
     // Pane 4: Algorithm Settings
     'pane.settings.title': 'Параметры алгоритма',
     'settings.genUsage.label': 'Режим генералов',
-    'settings.genUsage.tooltipTitle': 'Режим использования генералов',
-    'settings.genUsage.tooltipMax': '<b>Максимум</b>: главная цель — уничтожить максимум лагерей за 1 волну и сократить волны во всём приключении (например, уложиться в 2 волны). На лёгких лагерях экономятся генералы (соло), а на сложных используются отряды.',
-    'settings.genUsage.tooltipMin': '<b>Минимум</b>: главная цель — максимальное сбережение генералов и войск без раздувания волны.',
+    'settings.genUsage.tooltipTitle': 'Стратегия использования генералов',
+    'settings.genUsage.tooltipMin': '<b>Минимум (беречь)</b> — приоритет №1: максимальное сбережение генералов и войск. Алгоритм не пытается взять все лагеря за одну волну любой ценой. Подбираются самые надёжные и дешёвые составы с минимальной стоимостью потерь (lostValue). Исключаются лишние жертвенные атаки и риски отправки генералов на 2-часовой откат.',
+    'settings.genUsage.tooltipMax': '<b>Максимум (скорость)</b> — приоритет №1: уничтожить максимальное число лагерей параллельно за одну волну, чтобы сократить общее число волн в приключении (например, закрыть 18 лагерей всего за 2 волны). На простых лагерях генералы экономятся (соло), высвобождая ударные связки (squads) для боссов и сложных лагерей.',
     'settings.genUsage.min': 'Минимум (беречь)',
-    'settings.genUsage.max': 'Максимум (пройти)',
+    'settings.genUsage.max': 'Максимум (скорость)',
 
-    'settings.lossAcc.label': 'Списание потерь со склада',
-    'settings.lossAcc.tooltipTitle': 'Списание потерь со склада',
+    'settings.lossAcc.label': 'Списание потерь из гарнизона',
+    'settings.lossAcc.tooltipTitle': 'Списание потерь из гарнизона',
     'settings.lossAcc.tooltipMax': '<b>По худшему (max)</b>: списывает максимальный урон из всех прогонов симулятора. Гарантирует, что армия не останется без войск при неудачном рандоме.',
     'settings.lossAcc.tooltipAvg': '<b>По среднему (avg)</b>: списывает среднее матожидание потерь.',
     'settings.lossAcc.max': 'По худшему (max)',
@@ -591,22 +609,29 @@ const I18N = {
     'result.btnCopy': 'Скопировать план',
     'result.bento.waves': 'Волн',
     'result.bento.lostValue': 'Стоимость потерь',
+    'result.bento.lostUnits': 'Потери войск',
+    'result.bento.unitsUnit': 'юн.',
+    'result.bento.noLosses': 'Без потерь',
     'result.bento.generals': 'Генералов задействовано',
     'result.bento.calcTime': 'Время расчёта',
     'result.unlimited': 'без ограничений',
+    'result.recovery.title': 'Ресурсы на восстановление потерь (Казарма)',
+    'result.recovery.units': 'Потери войск:',
+    'result.recovery.resources': 'Необходимо ресурсов для найма в казарме:',
+    'result.recovery.tooltip': '{count} {unit}: требуется {res}',
     'result.error.title': 'Не удалось построить план',
     'result.error.calcTitle': 'Ошибка расчёта',
 
     // Wave Cards
     'wave.badge': 'Волна {num}',
     'wave.campsParallel': '{count} лагерей одновременно',
-    'wave.stockBefore': 'Склад до: {stock}',
+    'wave.stockBefore': 'Гарнизон до: {stock}',
     'wave.cooldown': '⏳ Откат 2 часа',
     'wave.cooldownDesc': '<b>{list}</b> (погибли и выбыли из следующих волн)',
     'wave.freeRevive': '✨ Бесплатный слив',
     'wave.freeReviveDesc': '<b>{list}</b> (воскресли по свойству 1-UP / навыку и готовы к следующей волне)',
-    'wave.stockAfter': 'Остаток на складе: {stock}',
-    'wave.armiesUsed': 'Задействовано армий: {stock}',
+    'wave.stockAfter': 'Остаток в гарнизоне: {stock}',
+    'wave.armiesUsed': 'Выведено армий: {stock}',
     'wave.lossesDeducted': 'Списано потерь: {stock}',
     'wave.blocker': 'Волна завершена: лагерь {num} — {reason} (требуется отряд из {need} ген.)',
 
@@ -651,13 +676,15 @@ const I18N = {
     'role.attack': 'атака',
 
     // Reasons
-    'reason.stock': 'не хватает запаса ограниченных юнитов',
+    'reason.stock': 'не хватает юнитов в гарнизоне',
     'reason.generals': 'нет свободных генералов нужной вместимости',
-    'reason.both': 'кончились и свободные генералы, и запас юнитов',
+    'reason.both': 'исчерпаны и генералы, и гарнизон войск',
 
     // Clipboard plan text
     'plan.header': '=== ПЛАН БОЯ: {adv} ===',
     'plan.summary': 'Волн: {waves} | Потери: {losses}',
+    'plan.lossesSummary': 'Потери войск: {units}',
+    'plan.resourcesSummary': 'Ресурсы на восстановление: {res}',
     'plan.waveHeader': '--- ВОЛНА {wave} ({camps} лаг.) ---',
     'plan.cdLabel': '[Откат 2ч]: {list}',
     'plan.reviveLabel': '[Бесплатное воскрешение]: {list}',
@@ -665,6 +692,26 @@ const I18N = {
     'plan.attackLine': '  {order}. {gen} ({role}): {army} [Потери: {losses}]',
     'plan.noLoss': 'без потерь',
   }
+};
+
+// Resources dictionary for troop recruitment in barracks
+const RESOURCE_NAMES = {
+  Settler: { en: 'Settler', uk: 'Поселенець', ru: 'Поселенец', icon: '🧑' },
+  Brew: { en: 'Brew', uk: 'Квас', ru: 'Квас', icon: '🍺' },
+  BronzeSword: { en: 'Bronze Sword', uk: 'Бронзовий меч', ru: 'Бронзовый меч', icon: '🗡️' },
+  IronSword: { en: 'Iron Sword', uk: 'Залізний меч', ru: 'Железный меч', icon: '⚔️' },
+  SteelSword: { en: 'Steel Sword', uk: 'Сталевий меч', ru: 'Стальной меч', icon: '⚔️' },
+  DamasceneSword: { en: 'Damascene Sword', uk: 'Дамаський меч', ru: 'Дамасский меч', icon: '⚔️' },
+  PlatinumSword: { en: 'Platinum Sword', uk: 'Платиновий меч', ru: 'Платиновый меч', icon: '⚔️' },
+  Bow: { en: 'Bow', uk: 'Лук', ru: 'Лук', icon: '🏹' },
+  Longbow: { en: 'Longbow', uk: 'Довгий лук', ru: 'Длинный лук', icon: '🏹' },
+  Crossbow: { en: 'Crossbow', uk: 'Арбалет', ru: 'Арбалет', icon: '🎯' },
+  Arquebus: { en: 'Arquebus', uk: 'Аркебуза', ru: 'Аркебуза', icon: '🔫' },
+  Cannon: { en: 'Cannon', uk: 'Гармата', ru: 'Пушка', icon: '💣' },
+  Mortar: { en: 'Mortar', uk: 'Мортира', ru: 'Мортира', icon: '💣' },
+  Horse: { en: 'Horse', uk: 'Кінь', ru: 'Лошадь', icon: '🐴' },
+  BattleHorse: { en: 'Battle Horse', uk: 'Бойовий кінь', ru: 'Боевой конь', icon: '🐎' },
+  Gunpowder: { en: 'Gunpowder', uk: 'Порох', ru: 'Порох', icon: '💥' },
 };
 
 // Unit localized names dictionary (official The Settlers Online naming)
@@ -947,6 +994,17 @@ function tUnit(unitId) {
   return item[currentLang] || item.en || unitId;
 }
 
+function tResource(resId) {
+  const item = RESOURCE_NAMES[resId];
+  if (!item) return resId;
+  return item[currentLang] || item.en || resId;
+}
+
+function getResourceIcon(resId) {
+  const item = RESOURCE_NAMES[resId];
+  return (item && item.icon) || '📦';
+}
+
 function tCampType(type) {
   const s = String(type || '').toLowerCase();
   if (s.includes('leader') || s.includes('boss')) return t('camp.legend.boss');
@@ -969,9 +1027,9 @@ function tRole(role) {
 function tReason(reason) {
   if (!reason) return '';
   const s = String(reason).toLowerCase();
-  if (s.includes('не хватает запаса') || s.includes('не вистачає запасу') || s.includes('restricted units')) return t('reason.stock');
+  if (s.includes('не хватает запаса') || s.includes('не вистачає запасу') || s.includes('гарниз') || s.includes('гарніз') || s.includes('garrison') || s.includes('restricted units')) return t('reason.stock');
   if (s.includes('нет свободных генералов') || s.includes('немає вільних генералів') || s.includes('no available generals')) return t('reason.generals');
-  if (s.includes('кончились') || s.includes('закінчилися') || s.includes('both generals')) return t('reason.both');
+  if (s.includes('кончились') || s.includes('закінчилися') || s.includes('исчерпаны') || s.includes('вичерпано') || s.includes('both generals')) return t('reason.both');
   return reason;
 }
 
@@ -1550,11 +1608,14 @@ function getAdventureTranslations(id) {
 window.I18N_ENGINE = {
   I18N,
   UNIT_NAMES,
+  RESOURCE_NAMES,
   getCurrentLang,
   setLanguage,
   onLanguageChange,
   t,
   tUnit,
+  tResource,
+  getResourceIcon,
   tCampType,
   tRole,
   tReason,

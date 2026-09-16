@@ -2,6 +2,8 @@
 const {
   t,
   tUnit,
+  tResource = (r) => r,
+  getResourceIcon = () => '📦',
   tCampType,
   tRole,
   tReason,
@@ -18,6 +20,8 @@ const {
     return s;
   },
   tUnit: (u) => u,
+  tResource: (r) => r,
+  getResourceIcon: () => '📦',
   tCampType: (tp) => tp,
   tRole: (r) => r,
   tReason: (rs) => rs,
@@ -73,6 +77,46 @@ function renderUnitIcon(unitId, extraClass = '') {
   return `<img src="${icon}" class="unit-icon ${extraClass}" alt="${name}" data-tooltip="${name}" loading="lazy">`;
 }
 
+const UNIT_RESOURCES = {
+  // Regular Barracks
+  Recruit: { Settler: 1, Brew: 5, BronzeSword: 10 },
+  Bowman: { Settler: 1, Brew: 5, Bow: 10 },
+  Militia: { Settler: 1, Brew: 10, IronSword: 10 },
+  Cavalry: { Settler: 1, Brew: 30, Horse: 40 },
+  Longbowman: { Settler: 1, Brew: 10, Longbow: 10 },
+  Soldier: { Settler: 1, Brew: 15, SteelSword: 10 },
+  Crossbowman: { Settler: 1, Brew: 20, Crossbow: 10 },
+  EliteSoldier: { Settler: 1, Brew: 15, DamasceneSword: 10 },
+  Cannoneer: { Settler: 1, Brew: 20, Cannon: 10, Gunpowder: 50 },
+
+  // Elite Barracks
+  Swordsman: { Settler: 1, Brew: 5, PlatinumSword: 10 },
+  MountedSwordsman: { Settler: 1, Brew: 15, PlatinumSword: 10, BattleHorse: 20 },
+  Knight: { Settler: 1, Brew: 15, PlatinumSword: 20, BattleHorse: 20 },
+  Marksman: { Settler: 1, Brew: 5, Arquebus: 10 },
+  ArmoredMarksman: { Settler: 1, Brew: 15, PlatinumSword: 10, Arquebus: 10 },
+  MountedMarksman: { Settler: 1, Brew: 15, Arquebus: 10, BattleHorse: 20 },
+  Besieger: { Settler: 1, Brew: 20, Mortar: 10, Gunpowder: 50 },
+};
+
+function formatUnitLossTooltip(unitId, lostCount) {
+  const name = tUnit(unitId);
+  const lostStr = `−${fmt(lostCount)}`;
+  const recipe = UNIT_RESOURCES[unitId];
+  if (!recipe || !lostCount) return `${name} ${lostStr}`;
+
+  const resList = Object.entries(recipe)
+    .map(([rId, amt]) => {
+      const total = Math.round(amt * lostCount * 10) / 10;
+      const rName = tResource(rId);
+      const icon = getResourceIcon(rId);
+      return `${icon ? icon + ' ' : ''}${fmt(total)} ${rName}`;
+    })
+    .join(', ');
+
+  return `${name} ${lostStr} · ${resList}`;
+}
+
 function renderUnitChip(unitId, count) {
   const icon = getUnitIconUrl(unitId);
   const name = tUnit(unitId);
@@ -87,10 +131,11 @@ function renderUnitLossChip(unitId, lostCount) {
   const icon = getUnitIconUrl(unitId);
   const name = tUnit(unitId);
   const lostStr = `−${fmt(lostCount)}`;
+  const tip = formatUnitLossTooltip(unitId, lostCount);
   if (!icon) {
-    return `<span class="unit-chip loss" data-tooltip="${name}">${name} ${lostStr}</span>`;
+    return `<span class="unit-chip loss" data-tooltip="${tip}">${name} ${lostStr}</span>`;
   }
-  return `<span class="unit-chip loss" data-tooltip="${name}"><img src="${icon}" class="unit-icon" alt="${name}" loading="lazy"><span class="unit-count">${lostStr}</span></span>`;
+  return `<span class="unit-chip loss" data-tooltip="${tip}"><img src="${icon}" class="unit-icon" alt="${name}" loading="lazy"><span class="unit-count">${lostStr}</span></span>`;
 }
 
 function initTooltips() {
@@ -1251,6 +1296,93 @@ function renderResult(r) {
     }
   }
 
+  // Calculate total units lost and total resources
+  let totalUnitsLost = r.totalUnitsLost;
+  let totalLosses = r.totalLosses;
+  let totalResources = r.totalResources;
+
+  if (totalUnitsLost === undefined) {
+    totalLosses = {};
+    for (const w of r.waves) {
+      for (const [u, n] of Object.entries(w.waveLosses || {})) {
+        if (n > 0) totalLosses[u] = Math.round(((totalLosses[u] || 0) + n) * 10) / 10;
+      }
+    }
+    totalUnitsLost = Math.round(Object.values(totalLosses).reduce((s, v) => s + v, 0) * 10) / 10;
+    totalResources = {};
+    for (const [u, count] of Object.entries(totalLosses)) {
+      const rec = UNIT_RESOURCES[u];
+      if (!rec) continue;
+      for (const [rId, amt] of Object.entries(rec)) {
+        totalResources[rId] = Math.round(((totalResources[rId] || 0) + amt * count) * 10) / 10;
+      }
+    }
+  }
+
+  const resTooltipSummary = Object.entries(totalResources || {})
+    .filter(([_, amt]) => amt > 0)
+    .map(([rId, amt]) => `${tResource(rId)}: ${fmt(amt)}`)
+    .join(', ');
+
+  const lossCardHtml = (totalUnitsLost <= 0)
+    ? `
+      <div class="bento-stat-card">
+        <span class="stat-label">${t('result.bento.lostUnits')}</span>
+        <span class="stat-value ok">0</span>
+        <span style="font-size:11px; color:var(--text-muted); margin-top:2px;">${t('result.bento.noLosses')}</span>
+      </div>
+    `
+    : `
+      <div class="bento-stat-card" data-tooltip="${t('result.recovery.title')}: ${resTooltipSummary}">
+        <span class="stat-label">${t('result.bento.lostUnits')}</span>
+        <span class="stat-value warn">−${fmt(totalUnitsLost)} <span style="font-size:12px; font-weight:normal; color:var(--text-muted);">${t('result.bento.unitsUnit')}</span></span>
+        <span style="font-size:11px; color:var(--text-muted); margin-top:2px;">${fmt(r.totalLostValue)} pts</span>
+      </div>
+    `;
+
+  let recoveryHtml = '';
+  if (totalUnitsLost > 0 && totalResources && Object.keys(totalResources).length > 0) {
+    const unitsPills = Object.entries(totalLosses)
+      .filter(([_, cnt]) => cnt > 0)
+      .map(([u, cnt]) => renderUnitLossChip(u, cnt))
+      .join(' ');
+
+    const resPills = Object.entries(totalResources)
+      .filter(([_, amt]) => amt > 0)
+      .map(([rId, amt]) => {
+        const icon = getResourceIcon(rId);
+        const name = tResource(rId);
+        return `
+          <span class="recovery-res-pill font-mono" data-tooltip="${name}: ${fmt(amt)}">
+            <span class="recovery-res-icon">${icon}</span>
+            <span class="recovery-res-amt">+${fmt(amt)}</span>
+            <span class="recovery-res-name">${name}</span>
+          </span>
+        `;
+      }).join('');
+
+    recoveryHtml = `
+      <div class="recovery-resources-panel">
+        <div class="recovery-header">
+          <span class="recovery-title">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+              <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+              <line x1="12" y1="22.08" x2="12" y2="12"></line>
+            </svg>
+            ${t('result.recovery.title')}
+          </span>
+          <div class="recovery-units-summary">
+            ${unitsPills}
+          </div>
+        </div>
+        <div class="recovery-resources-grid">
+          ${resPills}
+        </div>
+      </div>
+    `;
+  }
+
   let html = `
     <!-- Tactical Summary Dashboard -->
     <div class="dashboard-header">
@@ -1275,10 +1407,7 @@ function renderResult(r) {
         <span class="stat-label">${t('result.bento.waves')}</span>
         <span class="stat-value accent">${r.waves.length}</span>
       </div>
-      <div class="bento-stat-card">
-        <span class="stat-label">${t('result.bento.lostValue')}</span>
-        <span class="stat-value warn">${fmt(r.totalLostValue)}</span>
-      </div>
+      ${lossCardHtml}
       <div class="bento-stat-card">
         <span class="stat-label">${t('result.bento.generals')}</span>
         <span class="stat-value ok">${totalGeneralsUsed}</span>
@@ -1288,6 +1417,7 @@ function renderResult(r) {
         <span class="stat-value">${fmt(r.seconds)}s</span>
       </div>
     </div>
+    ${recoveryHtml}
   `;
 
   // Render Waves
@@ -1455,6 +1585,21 @@ function copyPlanToClipboard() {
   const lines = [];
   lines.push(t('plan.header', { adv: $('adv').value }));
   lines.push(t('plan.summary', { waves: LAST_PLAN_RESULT.waves.length, losses: fmt(LAST_PLAN_RESULT.totalLostValue) }));
+
+  if (LAST_PLAN_RESULT.totalUnitsLost > 0) {
+    const lossesStr = Object.entries(LAST_PLAN_RESULT.totalLosses || {})
+      .filter(([_, n]) => n > 0)
+      .map(([u, n]) => `${tUnit(u)} −${fmt(n)}`)
+      .join(', ');
+    if (lossesStr) lines.push(t('plan.lossesSummary', { units: lossesStr }));
+    if (LAST_PLAN_RESULT.totalResources && Object.keys(LAST_PLAN_RESULT.totalResources).length > 0) {
+      const resStr = Object.entries(LAST_PLAN_RESULT.totalResources)
+        .filter(([_, n]) => n > 0)
+        .map(([r, n]) => `${fmt(n)} ${tResource(r)}`)
+        .join(', ');
+      if (resStr) lines.push(t('plan.resourcesSummary', { res: resStr }));
+    }
+  }
   lines.push('');
 
   for (const w of LAST_PLAN_RESULT.waves) {
