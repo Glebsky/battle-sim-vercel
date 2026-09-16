@@ -74,7 +74,7 @@ if (args.flags.json) {
   for (const warn of (result.warnings || [])) console.log('! ' + warn);
   console.log('Приключение: ' + result.adventure);
   console.log('Порядок атак (как указан): ' + result.order.join(' → '));
-  console.log('Запас войск: ' + fmtStock(result.initialStock));
+  console.log('Гарнизон войск: ' + fmtStock(result.initialStock));
   console.log('Режим: потери ' + (result.lossAccounting === 'avg' ? 'по среднему' : 'по худшему случаю') +
     ' | макс. генералов на лагерь: ' + result.maxGeneralsPerCamp +
     ' | жертвенные армии: ' + result.sacrificePolicy +
@@ -85,7 +85,7 @@ if (args.flags.json) {
   for (const w of result.waves) {
     console.log('\n=== Волна ' + w.index + ': ' + w.attacks.length + ' лагерей, ' +
       w.generalsUsed + '/' + w.generalsAvailable + ' генералов ===');
-    console.log('  Склад до волны: ' + fmtStock(w.stockBefore));
+    console.log('  Гарнизон до волны: ' + fmtStock(w.stockBefore));
     for (const a of w.attacks) {
       let tag = '';
       if (a.chained) tag = '  [ЦЕПОЧКА ' + a.chainIndex + '/' + a.chainTotal +
@@ -117,7 +117,7 @@ if (args.flags.json) {
       console.log('  Слито генералов: ' + w.burned.map((b) => b.name +
         (b.free ? ' (бесплатный слив, остаётся в строю)' : ' (откат 2 ч, дальше не участвует)')).join(', '));
     }
-    console.log('  Склад после волны: ' + fmtStock(w.stockAfter));
+    console.log('  Гарнизон после волны: ' + fmtStock(w.stockAfter));
     if (w.blocker) {
       console.log('  Волна не выросла дальше: лагерь ' + w.blocker.number + ' — ' +
         w.blocker.reason + ' (там нужен отряд из ' + w.blocker.need + ' генералов)');
@@ -135,6 +135,15 @@ if (args.flags.json) {
     ' | волн: ' + result.waves.length +
     ' | задействовано генералов: ' + result.totalGenerals +
     ' | стоимость потерь: ' + f(result.totalLostValue) +
-    ' | остаток склада: ' + fmtStock(result.finalStock) +
+    ' | остаток гарнизона: ' + fmtStock(result.finalStock) +
     ' | время ' + f(result.seconds) + ' c');
+
+  if (result.totalUnitsLost > 0) {
+    console.log('Потери войск: ' + Object.entries(result.totalLosses).map(([u, n]) => u + ' −' + f(n)).join(', ') +
+      ' (всего ' + f(result.totalUnitsLost) + ' юнитов)');
+    if (result.totalResources && Object.keys(result.totalResources).length) {
+      console.log('Ресурсы на восстановление потерь: ' + Object.entries(result.totalResources)
+        .map(([r, n]) => f(n) + ' ' + r).join(', '));
+    }
+  }
 }

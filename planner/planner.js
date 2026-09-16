@@ -48,6 +48,61 @@ const DEFAULT_CHEAP_UNITS = [
   'Bowman', 'Longbowman', 'Crossbowman',
 ];
 
+// Exact barracks resource recipes for player units in The Settlers Online
+const UNIT_RESOURCES = {
+  // Regular Barracks
+  Recruit: { Settler: 1, Brew: 5, BronzeSword: 10 },
+  Bowman: { Settler: 1, Brew: 5, Bow: 10 },
+  Militia: { Settler: 1, Brew: 10, IronSword: 10 },
+  Cavalry: { Settler: 1, Brew: 30, Horse: 40 },
+  Longbowman: { Settler: 1, Brew: 10, Longbow: 10 },
+  Soldier: { Settler: 1, Brew: 15, SteelSword: 10 },
+  Crossbowman: { Settler: 1, Brew: 20, Crossbow: 10 },
+  EliteSoldier: { Settler: 1, Brew: 15, DamasceneSword: 10 },
+  Cannoneer: { Settler: 1, Brew: 20, Cannon: 10, Gunpowder: 50 },
+
+  // Elite Barracks
+  Swordsman: { Settler: 1, Brew: 5, PlatinumSword: 10 },
+  MountedSwordsman: { Settler: 1, Brew: 15, PlatinumSword: 10, BattleHorse: 20 },
+  Knight: { Settler: 1, Brew: 15, PlatinumSword: 20, BattleHorse: 20 },
+  Marksman: { Settler: 1, Brew: 5, Arquebus: 10 },
+  ArmoredMarksman: { Settler: 1, Brew: 15, PlatinumSword: 10, Arquebus: 10 },
+  MountedMarksman: { Settler: 1, Brew: 15, Arquebus: 10, BattleHorse: 20 },
+  Besieger: { Settler: 1, Brew: 20, Mortar: 10, Gunpowder: 50 },
+};
+
+const DEFAULT_UNIT_VALUES = {
+  Recruit: 1,
+  Bowman: 2,
+  Longbowman: 3,
+  Cavalry: 4,
+  Militia: 5,
+  Soldier: 9,
+  Crossbowman: 50,
+  EliteSoldier: 50,
+  Cannoneer: 100,
+  Swordsman: 50,
+  Marksman: 50,
+  MountedSwordsman: 100,
+  ArmoredMarksman: 100,
+  Knight: 105,
+  MountedMarksman: 120,
+  Besieger: 120,
+};
+
+function calcLostResources(losses) {
+  const res = {};
+  for (const [unitId, count] of Object.entries(losses || {})) {
+    if (!count || count <= 0) continue;
+    const recipe = UNIT_RESOURCES[unitId];
+    if (!recipe) continue;
+    for (const [rId, amt] of Object.entries(recipe)) {
+      res[rId] = Math.round(((res[rId] || 0) + amt * count) * 10) / 10;
+    }
+  }
+  return res;
+}
+
 function resolveCamps(camps, tokens) {
   const byNumber = new Map(camps.map((c) => [String(c.number), c]));
   const byKey = new Map(camps.map((c) => [c.key, c]));
@@ -1120,7 +1175,9 @@ function plan(input) {
 
   const cheapSet = new Set(cheapUnits);
   const opts = {
-    units, noLoss, unitValues, stepPct, reps, verify, lossAccounting,
+    units, noLoss,
+    unitValues: Object.keys(unitValues || {}).length ? { ...DEFAULT_UNIT_VALUES, ...unitValues } : DEFAULT_UNIT_VALUES,
+    stepPct, reps, verify, lossAccounting,
     maxUnitTypes,
     maxGeneralsPerCamp, beam, maxOptions,
     chainCamps, chainSeeds,
@@ -1366,6 +1423,15 @@ function plan(input) {
     }
   }
 
+  const totalLosses = {};
+  for (const w of waves) {
+    for (const [u, n] of Object.entries(w.waveLosses || {})) {
+      if (n > 0) totalLosses[u] = Math.round(((totalLosses[u] || 0) + n) * 10) / 10;
+    }
+  }
+  const totalLostResources = calcLostResources(totalLosses);
+  const totalUnitsLost = Math.round(Object.values(totalLosses).reduce((s, v) => s + v, 0) * 10) / 10;
+
   return {
     adventure,
     order: targets.map((c) => c.number),
@@ -1387,6 +1453,9 @@ function plan(input) {
     totalCamps: waves.reduce((s, w) => s + w.attacks.length, 0),
     totalGenerals: waves.reduce((s, w) => s + w.generalsUsed, 0),
     totalLostValue: waves.flatMap((w) => w.attacks).reduce((s, a) => s + a.lostValue, 0),
+    totalLosses,
+    totalUnitsLost,
+    totalResources: totalLostResources,
     seconds: (Date.now() - t0) / 1000,
   };
 }
@@ -1394,4 +1463,5 @@ function plan(input) {
 module.exports = {
   plan, buildGenerals, resolveCamps, groupClasses,
   DEFAULT_UNITS, ALL_PLAYER_UNITS, DEFAULT_CHEAP_UNITS,
+  UNIT_RESOURCES, DEFAULT_UNIT_VALUES, calcLostResources,
 };
