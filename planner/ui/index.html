@@ -575,7 +575,7 @@
     position: absolute;
     bottom: calc(100% + 8px);
     left: 0;
-    width: 260px;
+    width: 280px;
     background: rgba(15, 23, 42, 0.96);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
@@ -585,6 +585,7 @@
     font-size: 11px;
     line-height: 1.45;
     color: #cbd5e1;
+    text-align: left;
     box-shadow: 0 12px 30px -5px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.05);
     pointer-events: none;
     opacity: 0;
@@ -597,6 +598,12 @@
   .tooltip-popover.pos-right {
     left: auto;
     right: 0;
+  }
+
+  .tooltip-popover.pos-bottom {
+    bottom: auto;
+    top: calc(100% + 8px);
+    transform: translateY(-4px);
   }
 
   .has-tooltip:hover .tooltip-popover,
@@ -1068,6 +1075,88 @@
   .stat-value.ok { color: #34d399; }
   .stat-value.warn { color: #fbbf24; }
   .stat-value.accent { color: #60a5fa; }
+
+  /* Troop Recovery Resources Panel */
+  .recovery-resources-panel {
+    background: rgba(30, 41, 59, 0.55);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(251, 191, 36, 0.22);
+    border-radius: var(--radius-md);
+    padding: 12px 16px;
+    margin-bottom: 22px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .recovery-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .recovery-title {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11.5px;
+    font-weight: 700;
+    color: #fbbf24;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .recovery-units-summary {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+  }
+
+  .recovery-resources-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding-top: 8px;
+    border-top: 1px solid rgba(255, 255, 255, 0.07);
+  }
+
+  .recovery-res-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(15, 23, 42, 0.75);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--radius-sm);
+    padding: 4px 10px;
+    font-size: 12px;
+    color: var(--text-main);
+    transition: all 0.15s ease;
+  }
+
+  .recovery-res-pill:hover {
+    border-color: rgba(251, 191, 36, 0.4);
+    background: rgba(15, 23, 42, 0.95);
+  }
+
+  .recovery-res-icon {
+    font-size: 14px;
+    line-height: 1;
+  }
+
+  .recovery-res-name {
+    color: var(--text-muted);
+    font-size: 11px;
+  }
+
+  .recovery-res-amt {
+    font-weight: 700;
+    color: #fff;
+  }
 
   /* Wave Cards */
   .wave {
@@ -2494,7 +2583,7 @@
         </div>
       </div>
 
-      <!-- PANE 3: Troops & Stock -->
+      <!-- PANE 3: Troops & Garrison -->
       <div class="side-pane" id="pane-troops">
         <div class="panel-card">
           <div class="panel-card-header">
@@ -2502,7 +2591,7 @@
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
               </svg>
-              <span data-i18n="pane.troops.title">Troops & Stock</span>
+              <span data-i18n="pane.troops.title">Troops & Garrison</span>
             </div>
             <div class="row gap-sm" style="margin:0;">
               <button class="sec sm" id="presetElite" data-i18n="pane.troops.presetElite">Elite</button>
@@ -2519,7 +2608,7 @@
                   <th style="width:80px; text-align:center;">
                     <span class="has-tooltip">
                       <span data-i18n="unit.th.noLoss">No Loss</span>
-                      <span class="tooltip-popover pos-right">
+                      <span class="tooltip-popover pos-bottom pos-right">
                         <strong data-i18n="unit.tooltip.noLoss.title">«No Loss» Mode (noLoss)</strong>
                         <span data-i18n="unit.tooltip.noLoss.body">Strictly protects this unit from any loss. The unit will never be used in a sacrificial opener wave and will only be deployed for guaranteed 100% victories with 0 losses.</span>
                       </span>
@@ -2527,10 +2616,10 @@
                   </th>
                   <th style="width:75px; text-align:right;">
                     <span class="has-tooltip">
-                      <span data-i18n="unit.th.stock">Stock</span>
-                      <span class="tooltip-popover pos-right">
-                        <strong data-i18n="unit.tooltip.stock.title">Troop Stock Limit</strong>
-                        <span data-i18n="unit.tooltip.stock.body">Maximum number of units available in total across all generals in a single wave. Empty field = unlimited.</span>
+                      <span data-i18n="unit.th.stock">Garrison</span>
+                      <span class="tooltip-popover pos-bottom pos-right">
+                        <strong data-i18n="unit.tooltip.stock.title">Troop Garrison Limit</strong>
+                        <span data-i18n="unit.tooltip.stock.body">Maximum number of units available in the garrison across all generals in a single wave. Empty field = unlimited.</span>
                       </span>
                     </span>
                   </th>
@@ -2563,8 +2652,8 @@
                 </span>
                 <span class="tooltip-popover">
                   <strong data-i18n="settings.genUsage.tooltipTitle">General Usage Strategy</strong>
-                  <span data-i18n="settings.genUsage.tooltipMax" data-i18n-html="true"><b>Maximum (speed)</b>: primary goal is to clear the maximum number of camps in a single wave to minimize total waves in the adventure. Solos easy camps and squads hard camps.</span>
-                  <span class="tooltip-why" data-i18n="settings.genUsage.tooltipMin" data-i18n-html="true"><b>Minimum (conserve)</b>: primary goal is to preserve generals and troops without inflating wave sizes.</span>
+                  <span data-i18n="settings.genUsage.tooltipMin" data-i18n-html="true"><b>Minimum (conserve)</b> — Priority 1: troop and general preservation. Does not rush to clear all camps in one wave. Prioritizes the safest, lowest-cost lineups with minimal casualties (lostValue), avoiding risky opener wipes and 2-hour general cooldowns.</span>
+                  <span class="tooltip-why" data-i18n="settings.genUsage.tooltipMax" data-i18n-html="true"><b>Maximum (speed)</b> — Priority 1: clear the maximum number of camps in parallel per wave to finish the adventure in minimal waves (e.g. 18 camps in 2 waves). Conserves generals on easy camps (solo) to deploy multi-general squads against bosses and fortified camps.</span>
                 </span>
               </span>
             </div>
@@ -2577,12 +2666,12 @@
           <div class="setting-group">
             <div class="setting-label-row">
               <span class="has-tooltip">
-                <label data-i18n="settings.lossAcc.label">Stock loss accounting</label>
+                <label data-i18n="settings.lossAcc.label">Garrison loss deduction</label>
                 <span class="tooltip-icon" tabindex="0">
                   <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
                 </span>
                 <span class="tooltip-popover">
-                  <strong data-i18n="settings.lossAcc.tooltipTitle">Stock Loss Accounting</strong>
+                  <strong data-i18n="settings.lossAcc.tooltipTitle">Garrison Loss Deduction</strong>
                   <span data-i18n="settings.lossAcc.tooltipMax" data-i18n-html="true"><b>Worst-case (max)</b>: deducts maximum damage observed across all simulation runs. Guarantees the army will never run out of troops due to bad RNG.</span>
                   <span class="tooltip-why" data-i18n="settings.lossAcc.tooltipAvg" data-i18n-html="true"><b>Average (avg)</b>: deducts expected statistical average losses.</span>
                 </span>
