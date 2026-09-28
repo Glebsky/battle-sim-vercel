@@ -39,6 +39,15 @@ function copyRecursive(src, dest) {
 
 try {
   copyRecursive(SRC_DIR, DEST_DIR);
+  // Ensure wasm.js and wasm_bg.wasm are available in public/ for Web Worker
+  for (const wasmFile of ['wasm.js', 'wasm_bg.wasm']) {
+    const src = path.join(ROOT_DIR, wasmFile);
+    const dest = path.join(DEST_DIR, wasmFile);
+    if (fs.existsSync(src)) {
+      fs.copyFileSync(src, dest);
+      console.log(`  ✓ Copied ${wasmFile} to public/`);
+    }
+  }
   console.log('[Build] ✓ Frontend assets synchronized successfully to public/');
 } catch (err) {
   console.error('[Build] ERROR while copying assets:', err);

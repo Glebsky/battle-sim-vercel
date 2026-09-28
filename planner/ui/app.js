@@ -1142,6 +1142,8 @@ function toggleAllGenerals(on) {
 }
 
 // --- Calculation and Tactical Dashboard -------------------------------------
+let CURRENT_WORKER = null;
+
 async function run() {
   const exportData = S.get('generalsExport', null);
   if (!exportData) {
@@ -1163,13 +1165,34 @@ async function run() {
 
   $('run').disabled = true;
   if ($('runMobile')) $('runMobile').disabled = true;
-  
+
+  const cancelHandler = () => {
+    if (CURRENT_WORKER) {
+      try { CURRENT_WORKER.terminate(); } catch (e) {}
+      CURRENT_WORKER = null;
+    }
+    clearInterval(CALC_TIMER);
+    $('run').disabled = false;
+    if ($('runMobile')) $('runMobile').disabled = false;
+    showToast(t('loader.canceled'), 'info');
+    if (LAST_PLAN_RESULT) {
+      renderResult(LAST_PLAN_RESULT);
+    } else {
+      $('out').innerHTML = `
+        <div class="panel-card" style="text-align:center; padding:24px;">
+          <div class="dim" style="font-size:13px;">${t('loader.canceled')}</div>
+        </div>
+      `;
+    }
+  };
+
   // Show skeleton loader and switch view
-  renderSkeletonLoader();
+  renderSkeletonLoader(cancelHandler);
   setMobileTab('results');
 
   const body = {
     adventure: $('adv').value,
+    adventureCamps: window.CAMPS || [],
     camps: campTokens,
     generalsExport: exportData,
     enabledGenerals: S.get('enabledGenerals', GENERALS.map((g) => g.uid)),
@@ -1188,12 +1211,74 @@ async function run() {
     generalUsage: SETTINGS.genUsage,
   };
 
-  try {
-    const res = await (await fetch('/api/plan', {
+  const runViaWorker = () => {
+    return new Promise((resolve, reject) => {
+      try {
+        const worker = new Worker('/planner.worker.js');
+        CURRENT_WORKER = worker;
+
+        worker.onmessage = (e) => {
+          const { type, data, error } = e.data || {};
+          if (type === 'PROGRESS') {
+            updateSkeletonProgress(data);
+          } else if (type === 'RESULT') {
+            worker.terminate();
+            CURRENT_WORKER = null;
+            resolve(data);
+          } else if (type === 'ERROR') {
+            worker.terminate();
+            CURRENT_WORKER = null;
+            reject(new Error(error || 'Worker calculation failed'));
+          }
+        };
+
+        worker.onerror = (err) => {
+          worker.terminate();
+          CURRENT_WORKER = null;
+          reject(err);
+        };
+
+        worker.postMessage({ type: 'START_PLAN', payload: body });
+      } catch (err) {
+        reject(err);
+      }
+    });
+  };
+
+  const runViaApi = async () => {
+    const res = await fetch('/api/plan', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
-    })).json();
+    });
+    if (!res.ok) {
+      const errText = await res.text();
+      let errMsg = `Server returned ${res.status}`;
+      try {
+        const parsed = JSON.parse(errText);
+        if (parsed.error) errMsg = parsed.error;
+      } catch (e) {
+        if (errText.includes('FUNCTION_INVOCATION_TIMEOUT')) {
+          errMsg = 'FUNCTION_INVOCATION_TIMEOUT: Превышен лимит времени выполнения на сервере (Vercel). Попробуйте уменьшить число лагерей.';
+        }
+      }
+      throw new Error(errMsg);
+    }
+    return await res.json();
+  };
+
+  try {
+    let res = null;
+    if (typeof Worker !== 'undefined') {
+      try {
+        res = await runViaWorker();
+      } catch (workerErr) {
+        console.warn('Web Worker execution failed, falling back to server API:', workerErr);
+        res = await runViaApi();
+      }
+    } else {
+      res = await runViaApi();
+    }
 
     LAST_PLAN_RESULT = res;
     renderResult(res);
@@ -1201,17 +1286,38 @@ async function run() {
     $('out').innerHTML = `
       <div class="panel-card" style="border-color: rgba(239, 68, 68, 0.4); background: rgba(239, 68, 68, 0.08);">
         <div style="font-weight:700; color:#f87171; margin-bottom:6px;">${t('result.error.calcTitle')}</div>
-        <div class="dim" style="font-size:13px;">${e.message}</div>
+        <div class="dim" style="font-size:13px; line-height:1.5;">${e.message}</div>
       </div>
     `;
   } finally {
     $('run').disabled = false;
     if ($('runMobile')) $('runMobile').disabled = false;
     clearInterval(CALC_TIMER);
+    CURRENT_WORKER = null;
   }
 }
 
-function renderSkeletonLoader() {
+function updateSkeletonProgress(p) {
+  if (!p) return;
+  const bar = $('calcProgressBar');
+  const pctEl = $('calcProgressPct');
+  const statusEl = $('calcStatusText');
+
+  const pct = Math.max(0, Math.min(100, Math.round(p.pct || 0)));
+  if (bar) bar.style.width = `${pct}%`;
+  if (pctEl) pctEl.textContent = `${pct}%`;
+
+  if (statusEl) {
+    if (p.stage === 'searching' && p.currentCamp) {
+      statusEl.textContent = t('loader.progress', { solved: p.solvedCamps, total: p.totalCamps, pct }) +
+        ` · ${t('loader.campSearching', { num: p.currentCamp })}`;
+    } else if (p.stage === 'wave_done') {
+      statusEl.textContent = t('loader.progress', { solved: p.solvedCamps, total: p.totalCamps, pct });
+    }
+  }
+}
+
+function renderSkeletonLoader(onCancel) {
   let elapsed = 0;
   $('out').innerHTML = `
     <div class="skeleton-loader">
@@ -1229,8 +1335,22 @@ function renderSkeletonLoader() {
           </svg>
         </div>
         <h3 style="font-size:16px; font-weight:700; color:#fff; margin-bottom:4px;">${t('loader.title')}</h3>
-        <p class="muted" style="font-size:13px;">${t('loader.desc')}</p>
-        <div class="font-mono dim" id="calcTimerText" style="font-size:12px; margin-top:8px;">${t('loader.timer', { time: '0.0' })}</div>
+        <p class="muted" style="font-size:13px;" id="calcStatusText">${t('loader.desc')}</p>
+
+        <!-- Live Progress Bar -->
+        <div style="max-width:320px; margin:14px auto 8px auto;">
+          <div style="background:rgba(255,255,255,0.08); border-radius:6px; height:6px; overflow:hidden; position:relative;">
+            <div id="calcProgressBar" style="width:0%; height:100%; background:linear-gradient(90deg, #3b82f6, #60a5fa); transition:width 0.3s ease; border-radius:6px;"></div>
+          </div>
+          <div class="font-mono" id="calcProgressPct" style="font-size:11px; color:#94a3b8; margin-top:6px;">0%</div>
+        </div>
+
+        <div class="font-mono dim" id="calcTimerText" style="font-size:12px; margin-top:4px;">${t('loader.timer', { time: '0.0' })}</div>
+
+        <!-- Cancel Button -->
+        <button id="btnCancelCalc" class="btn" style="margin-top:14px; background:rgba(239,68,68,0.12); color:#f87171; border:1px solid rgba(239,68,68,0.25); font-size:12px; padding:6px 16px; border-radius:6px; cursor:pointer;">
+          ✕ ${t('loader.cancel')}
+        </button>
       </div>
 
       <div class="skeleton-card">
@@ -1247,6 +1367,10 @@ function renderSkeletonLoader() {
       </div>
     </div>
   `;
+
+  if ($('btnCancelCalc') && typeof onCancel === 'function') {
+    $('btnCancelCalc').onclick = onCancel;
+  }
 
   if (!document.getElementById('spin-style')) {
     const st = document.createElement('style');
@@ -1398,6 +1522,13 @@ function renderResult(r) {
           </svg>
           ${t('result.btnCopy')}
         </button>
+        <button class="sec" id="btnCopyClientPlan">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+            <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+          </svg>
+          ${t('result.btnCopyClient')}
+        </button>
       </div>
     </div>
 
@@ -1444,8 +1575,17 @@ function renderResult(r) {
             <span class="wave-badge">${t('wave.badge', { num: w.index })}</span>
             <span class="wave-title">${t('wave.campsParallel', { count: w.attacks.length })}</span>
           </div>
-          <div class="wave-summary-pills font-mono">
-            <span class="summary-pill">${t('wave.stockBefore', { stock: fmtStockPills(w.stockBefore) })}</span>
+          <div class="row gap-xs items-center" style="margin:0;">
+            <div class="wave-summary-pills font-mono">
+              <span class="summary-pill">${t('wave.stockBefore', { stock: fmtStockPills(w.stockBefore) })}</span>
+            </div>
+            <button class="sec btn-wave-copy-client" data-wave="${w.index}" style="padding:2px 8px; font-size:11px; height:24px; white-space:nowrap;" title="${t('result.btnCopyWaveClient', { num: w.index })}">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle; margin-right:3px;">
+                <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+                <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+              </svg>
+              ${t('result.btnCopyWaveClient', { num: w.index })}
+            </button>
           </div>
         </div>
         <div class="wave-body">
@@ -1577,6 +1717,114 @@ function renderResult(r) {
   if ($('btnCopyPlan')) {
     $('btnCopyPlan').onclick = copyPlanToClipboard;
   }
+  if ($('btnCopyClientPlan')) {
+    $('btnCopyClientPlan').onclick = () => copyClientScriptToClipboard();
+  }
+  document.querySelectorAll('.btn-wave-copy-client').forEach((btn) => {
+    btn.onclick = (e) => {
+      e.stopPropagation();
+      const waveNum = Number(btn.getAttribute('data-wave'));
+      copyClientScriptToClipboard(waveNum);
+    };
+  });
+}
+
+function getCampClientTarget(camp) {
+  if (!camp) return { target: 0, targetName: '' };
+  let target = 0;
+  if (camp.coordinates && typeof camp.coordinates.x === 'number' && typeof camp.coordinates.y === 'number') {
+    target = camp.coordinates.x + camp.coordinates.y * 68;
+  } else if (camp.position && typeof camp.position.x === 'number' && typeof camp.position.y === 'number') {
+    target = camp.number || 0;
+  } else {
+    target = camp.number || 0;
+  }
+
+  let name = '';
+  const b = camp.building || '';
+  if (b.includes('Banditsleader') || b.includes('leader') || camp.type === 'Leader') {
+    name = 'Шатер вожака разбойников';
+  } else if (b.includes('BanditsLvl2') || camp.type === 'Medium') {
+    name = 'Лагерь разбойников (средний)';
+  } else if (b.includes('BanditsLvl3') || camp.type === 'Heavy') {
+    name = 'Лагерь разбойников (сложный)';
+  } else if (b.includes('Bandits') || camp.type === 'Small') {
+    name = 'Лагерь разбойников (легкий)';
+  } else {
+    name = 'Лагерь разбойников';
+  }
+
+  if (name.length > 25) {
+    name = name.slice(0, 24) + '...';
+  }
+
+  return { target, targetName: name };
+}
+
+function generateClientBattlePacket(waveIndex = null) {
+  if (!LAST_PLAN_RESULT || !LAST_PLAN_RESULT.waves || !LAST_PLAN_RESULT.waves.length) return null;
+
+  const waves = waveIndex != null
+    ? LAST_PLAN_RESULT.waves.filter((w) => w.index === waveIndex)
+    : LAST_PLAN_RESULT.waves;
+
+  if (!waves.length) return null;
+
+  const packet = {};
+  let currentOrder = 0;
+
+  for (const w of waves) {
+    for (const a of w.attacks) {
+      const { target, targetName } = getCampClientTarget(a.camp);
+      const squad = a.squad || [];
+
+      for (let sIdx = 0; sIdx < squad.length; sIdx++) {
+        const s = squad[sIdx];
+        const g = s.general;
+        const uid = g.uid;
+
+        const armyMap = {};
+        for (const u of (s.army || [])) {
+          if (u.amount > 0) {
+            armyMap[u.id] = u.amount;
+          }
+        }
+
+        packet[uid] = {
+          grid: g.grid != null ? g.grid : 0,
+          name: g.rawName || (g.name ? `<b>${g.name}</b>` : `<b>${g.base}</b>`),
+          order: currentOrder++,
+          time: 1000,
+          skills: g.skills || {},
+          army: armyMap,
+          type: g.type || 1,
+          target,
+          targetName,
+        };
+      }
+    }
+  }
+
+  return packet;
+}
+
+function copyClientScriptToClipboard(waveIndex = null) {
+  const isMultiWave = LAST_PLAN_RESULT && LAST_PLAN_RESULT.waves && LAST_PLAN_RESULT.waves.length > 1;
+  const targetWave = waveIndex != null ? waveIndex : (isMultiWave ? 1 : null);
+
+  const packet = generateClientBattlePacket(targetWave);
+  if (!packet || Object.keys(packet).length === 0) return;
+
+  const jsonStr = JSON.stringify(packet, null, ' ');
+  navigator.clipboard.writeText(jsonStr).then(() => {
+    if (targetWave != null && isMultiWave) {
+      showToast(t('toast.clientWaveCopied', { num: targetWave }), 'ok');
+    } else {
+      showToast(t('toast.clientCopied'), 'ok');
+    }
+  }).catch(() => {
+    showToast(t('toast.copyFailed'), 'warn');
+  });
 }
 
 function copyPlanToClipboard() {

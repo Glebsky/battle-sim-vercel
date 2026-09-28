@@ -6,5 +6,9 @@ const planner = require('../planner/planner');
 module.exports = withErrors(async (req, res) => {
   if (req.method !== 'POST') return sendJson(res, 405, { error: 'method not allowed' });
   const body = await readBody(req);
+  if (!body.timeBudgetMs) {
+    // Prevent FUNCTION_INVOCATION_TIMEOUT on Vercel 10s serverless limit
+    body.timeBudgetMs = 9500;
+  }
   sendJson(res, 200, planner.plan(body));
 });
