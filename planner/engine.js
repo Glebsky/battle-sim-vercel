@@ -76,6 +76,9 @@ function loadAdventure(id) {
     number: c.number,
     type: c.type,
     sector: c.sector,
+    building: c.building || null,
+    coordinates: c.coordinates || null,
+    position: c.position || null,
     hitpoints: c.hitpoints ?? 250,
     units: c.units.map((u) => ({ id: u.id, value: 0, amount: u.amount })),
   }));
@@ -86,11 +89,15 @@ function loadAdventure(id) {
 function campGarrison(camp) {
   return {
     kind: 'Default',
-    hitpoints: camp.hitpoints,
+    hitpoints: camp.hitpoints ?? 250,
     camp_id: camp.key,
-    camp_type: camp.type,
+    camp_type: camp.type || 'Small',
     general: null,
-    units: camp.units,
+    units: (camp.units || []).map((u) => ({
+      id: u.id,
+      value: u.value != null ? Number(u.value) : 0,
+      amount: Number(u.amount) || 0,
+    })),
   };
 }
 
