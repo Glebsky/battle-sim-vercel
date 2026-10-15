@@ -141,20 +141,46 @@ function normalizeSkills(raw, skillMap, type, unmapped) {
   return out;
 }
 
+const DEFAULT_SKILL_MAP = {
+  0: 'Skill_IncreaseBowmanMaximumAD',
+  1: 'Skill_IncreaseXP',
+  2: 'Skill_IncreaseGeneralSplashAndAD',
+  3: 'Skill_DescreaseBossHP',
+  4: 'Skill_IncreaseLongbowmanAndMarksmanAD',
+  5: 'Skill_IncreaseCombatSpeed',
+  6: 'Skill_IncreaseTravelSpeed',
+  7: 'Skill_IncreaseRecoverySpeed',
+  8: 'Skill_IncreaseADEveryRound',
+  9: 'Skill_IncreaseSwiftSplashAndAD',
+  10: 'Skill_GetRecruits',
+  11: 'Skill_IncreasePeacefulMovementSpeed',
+  12: 'Skill_IncreaseCapacity',
+  13: 'Skill_IncreaseHeavyAD',
+  14: 'Skill_ResurrectLosses',
+  15: 'Skill_IncreaseEliteSoldierSplashAndAD',
+  16: 'Skill_InstantRecovery',
+  17: 'Skill_GetStarCoins',
+  18: 'Skill_GeneralAttacksTwice',
+  19: 'Skill_IncreaseAccuracy',
+};
+
 // The game's attack-plan export identifies a general by a numeric class id
 // ("type") and by its localized name. Both are mapped onto engine bases here.
 const GAME_TYPE_BASES = {
-  7: 'HalloweenGeneral', 9: 'EasterGeneral', 13: 'MajorGeneral',
-  15: 'StarGeneral2', 16: 'StarGeneral3', 33: 'Xmas2019General',
-  36: 'MedicGeneral', 37: 'MadScientistGeneral', 50: 'Halloween2019General',
-  56: 'AssassinGeneral', 57: 'SylvanaGeneral', 63: 'GhostGeneral',
-  75: 'NutcrackerGeneral', 79: 'ResoluteGeneral', 85: 'GeneralJuan',
-  96: 'NarcissisticGeneral',
+  1: 'General', 3: 'General', 7: 'HalloweenGeneral', 8: 'General',
+  9: 'EasterGeneral', 11: 'General', 13: 'MajorGeneral', 14: 'StarGeneral1',
+  15: 'StarGeneral2', 16: 'StarGeneral3', 24: 'General', 25: 'LordDraculGeneral',
+  27: 'SantaGeneral', 29: 'GeneralVargus', 30: 'GeneralAnslem', 31: 'GeneralNusala',
+  33: 'Xmas2019General', 36: 'MedicGeneral', 37: 'MadScientistGeneral', 47: 'MajorGeneral',
+  50: 'Halloween2019General', 56: 'AssassinGeneral', 57: 'SylvanaGeneral', 63: 'GhostGeneral',
+  75: 'NutcrackerGeneral', 79: 'ResoluteGeneral', 85: 'GeneralJuan', 96: 'NarcissisticGeneral',
 };
 
 const BASE_TO_GAME_TYPE = {
   HalloweenGeneral: 7, EasterGeneral: 9, MajorGeneral: 13,
-  StarGeneral2: 15, StarGeneral3: 16, Xmas2019General: 33,
+  StarGeneral1: 14, StarGeneral2: 15, StarGeneral3: 16,
+  LordDraculGeneral: 25, SantaGeneral: 27, GeneralVargus: 29,
+  GeneralAnslem: 30, GeneralNusala: 31, Xmas2019General: 33,
   MedicGeneral: 36, MadScientistGeneral: 37, Halloween2019General: 50,
   AssassinGeneral: 56, SylvanaGeneral: 57, GhostGeneral: 63,
   NutcrackerGeneral: 75, ResoluteGeneral: 79, GeneralJuan: 85,
@@ -287,12 +313,12 @@ function normalizeExport(raw, warnings) {
 
 function buildGenerals(rawExport, warnings) {
   const exportData = normalizeExport(rawExport, warnings);
-  const skillMap = exportData.skillMap || null;
+  const skillMap = Object.assign({}, DEFAULT_SKILL_MAP, exportData.skillMap || {});
   const unmapped = new Set();
   const generals = (exportData.specialists || []).map((s) => {
     const skills = normalizeSkills(s.skills, skillMap, s.type, unmapped);
     const given = Number(s.capacity);
-    const resolvedType = s.type || BASE_TO_GAME_TYPE[s.base] || 1;
+    const resolvedType = s.type != null ? s.type : (BASE_TO_GAME_TYPE[s.base] || 1);
     return {
       uid: s.id,
       name: s.name || s.base,
@@ -1195,9 +1221,16 @@ function plan(input, onProgress) {
   for (const g of generals) {
     let lives = 0;
     if (freeSacrificeSet.has(g.base)) lives += 1;
-    if (g.skills && g.skills.Skill_InstantRecovery) {
-      lives += Number(g.skills.Skill_InstantRecovery);
+    let hasInstantRecovery = false;
+    if (Array.isArray(g.skills)) {
+      hasInstantRecovery = g.skills.some((s) => typeof s === 'string' && s.startsWith('Skill_InstantRecovery'));
+    } else if (g.skills && typeof g.skills === 'object') {
+      hasInstantRecovery = Boolean(g.skills.Skill_InstantRecovery);
     }
+    if (!hasInstantRecovery && g.skillList && typeof g.skillList === 'object') {
+      hasInstantRecovery = Boolean(g.skillList.Skill_InstantRecovery || g.skillList['16'] || g.skillList[16]);
+    }
+    if (hasInstantRecovery) lives += 1;
     // In TSO, extra lives do not stack beyond 1 (max 1 free resurrection per adventure).
     extraLivesPerUid.set(g.uid, Math.min(1, lives));
   }
