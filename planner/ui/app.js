@@ -5,6 +5,7 @@ const {
   tResource = (r) => r,
   getResourceIcon = () => '📦',
   tCampType,
+  tBuilding = (b) => b,
   tRole,
   tReason,
   tAdv,
@@ -23,6 +24,7 @@ const {
   tResource: (r) => r,
   getResourceIcon: () => '📦',
   tCampType: (tp) => tp,
+  tBuilding: (b) => b,
   tRole: (r) => r,
   tReason: (rs) => rs,
   tAdv: (id) => id,
@@ -52,6 +54,7 @@ let GENERALS = [];
 let UNIT_VALUES = {};
 let QUEUE = [];
 let LAST_PLAN_RESULT = null;
+let LAST_ADVENTURE_SNAPSHOT = null;
 let CALC_TIMER = null;
 
 // Settings state
@@ -109,8 +112,7 @@ function formatUnitLossTooltip(unitId, lostCount) {
     .map(([rId, amt]) => {
       const total = Math.round(amt * lostCount * 10) / 10;
       const rName = tResource(rId);
-      const icon = getResourceIcon(rId);
-      return `${icon ? icon + ' ' : ''}${fmt(total)} ${rName}`;
+      return `${fmt(total)} ${rName}`;
     })
     .join(', ');
 
@@ -252,6 +254,10 @@ function updateAdventureSelect(selectedId = null, query = null) {
   $('adv').value = nextVal;
 
   if (changed) {
+    if (LAST_ADVENTURE_SNAPSHOT) {
+      LAST_ADVENTURE_SNAPSHOT = null;
+      renderAutobitSnapshotBanner();
+    }
     S.set('adventure', nextVal);
     updateDockSummary();
     loadAdventureInfo();
@@ -357,6 +363,10 @@ async function init() {
     $('advSearch').oninput = (e) => filterAdventures(e.target.value);
   }
   $('adv').onchange = () => {
+    if (LAST_ADVENTURE_SNAPSHOT) {
+      LAST_ADVENTURE_SNAPSHOT = null;
+      renderAutobitSnapshotBanner();
+    }
     S.set('adventure', $('adv').value);
     updateDockSummary();
     loadAdventureInfo();
@@ -420,16 +430,27 @@ async function init() {
     try {
       const data = JSON.parse(await file.text());
       S.set('generalsExport', data);
+      const inGameSpecs = parseInGameSpecialists(data);
+      if (inGameSpecs.length > 0 && (data.exportedAt || data.skillMap || (data.specialists && data.specialists.some((s) => s.id && /^\d+$/.test(String(s.id)))))) {
+        S.set('studioGenerals', data);
+        if ($('autobitGenJsonArea')) $('autobitGenJsonArea').value = JSON.stringify(data, null, ' ');
+      }
       await applyGeneralsExport(data);
+      updateClientCopyButtonsVisibility();
     } catch (err) {
       alert(t('toast.jsonError', { err: err.message }));
     }
   };
 
+  if ($('btnSidebarAutobit')) {
+    $('btnSidebarAutobit').onclick = () => openAutobitModal();
+  }
+
   $('genAll').onclick = () => toggleAllGenerals(true);
   $('genNone').onclick = () => toggleAllGenerals(false);
   $('run').onclick = run;
   if ($('runMobile')) $('runMobile').onclick = run;
+  initAutobitStudioEvents();
 }
 
 function bindSegmentedControl(id, onChange) {
@@ -472,6 +493,21 @@ function setMobileTab(tab) {
 async function loadAdventureInfo() {
   const id = $('adv').value;
   if (!id) return;
+
+  if (LAST_ADVENTURE_SNAPSHOT) {
+    const snapKey = (LAST_ADVENTURE_SNAPSHOT.adventureKey || '').toLowerCase();
+    const snapName = (LAST_ADVENTURE_SNAPSHOT.adventureName || '').toLowerCase();
+    const curId = id.toLowerCase();
+    const isSameAdv = snapKey === curId ||
+      (snapKey && curId.includes(snapKey)) ||
+      (snapName && curId.includes(snapName)) ||
+      (snapKey && snapKey.includes(curId));
+    if (!isSameAdv) {
+      LAST_ADVENTURE_SNAPSHOT = null;
+      renderAutobitSnapshotBanner();
+    }
+  }
+
   const res = await (await fetch('/api/adventure?id=' + encodeURIComponent(id))).json();
   window.CAMPS = res.camps;
   window.CURRENT_MAP = res.map || null;
@@ -1091,7 +1127,13 @@ async function applyGeneralsExport(data) {
 
     GENERALS = res.generals || [];
     UNIT_VALUES = res.unitValues || {};
-    const enabled = S.get('enabledGenerals', GENERALS.map((g) => g.uid));
+    const allUids = GENERALS.map((g) => g.uid);
+    let enabled = S.get('enabledGenerals', null);
+    // A different roster was loaded (none of the saved UIDs exist) -> enable all.
+    if (!Array.isArray(enabled) || (enabled.length && !enabled.some((u) => allUids.includes(u)))) {
+      enabled = allUids;
+      S.set('enabledGenerals', enabled);
+    }
 
     if ($('sideBadgeGenerals')) $('sideBadgeGenerals').textContent = GENERALS.length;
     $('genHint').innerHTML = t('gen.hint.loaded', { count: GENERALS.length });
@@ -1522,12 +1564,23 @@ function renderResult(r) {
           </svg>
           ${t('result.btnCopy')}
         </button>
-        <button class="sec" id="btnCopyClientPlan">
+        <button class="sec" id="btnCopyClientPlan" style="${isClientScriptReady(r, 'all') ? '' : 'display:none;'}">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
             <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
           </svg>
           ${t('result.btnCopyClient')}
+        </button>
+        <button class="pri" id="btnOpenAutobitModal" title="${t('result.btnAutobitTip')}">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect>
+            <rect x="9" y="9" width="6" height="6"></rect>
+            <line x1="9" y1="1" x2="9" y2="4"></line>
+            <line x1="15" y1="1" x2="15" y2="4"></line>
+            <line x1="9" y1="20" x2="9" y2="23"></line>
+            <line x1="15" y1="20" x2="15" y2="23"></line>
+          </svg>
+          ${t('result.btnAutobit')}
         </button>
       </div>
     </div>
@@ -1579,12 +1632,19 @@ function renderResult(r) {
             <div class="wave-summary-pills font-mono">
               <span class="summary-pill">${t('wave.stockBefore', { stock: fmtStockPills(w.stockBefore) })}</span>
             </div>
-            <button class="sec btn-wave-copy-client" data-wave="${w.index}" style="padding:2px 8px; font-size:11px; height:24px; white-space:nowrap;" title="${t('result.btnCopyWaveClient', { num: w.index })}">
+            <button class="sec btn-wave-copy-client" data-wave="${w.index}" style="${isClientScriptReady(r, w.index) ? '' : 'display:none; '}padding:2px 8px; font-size:11px; height:24px; white-space:nowrap;" title="${t('result.btnCopyWaveClient', { num: w.index })}">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle; margin-right:3px;">
                 <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
                 <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
               </svg>
               ${t('result.btnCopyWaveClient', { num: w.index })}
+            </button>
+            <button class="sec btn-wave-autobit" data-wave="${w.index}" style="padding:2px 8px; font-size:11px; height:24px; white-space:nowrap;" title="${t('result.btnWaveAutobit', { num: w.index })}">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle; margin-right:3px;">
+                <rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect>
+                <rect x="9" y="9" width="6" height="6"></rect>
+              </svg>
+              ${t('result.btnWaveAutobit', { num: w.index })}
             </button>
           </div>
         </div>
@@ -1596,7 +1656,10 @@ function renderResult(r) {
       const lost = a.perUnit.filter((u) => u.lost > 0)
         .map((u) => renderUnitLossChip(u.id, u.lost)).join(' ') || `<span class="tag-pill ok">${t('atk.noLoss')}</span>`;
       
-      const enemy = a.camp.units.map((u) => renderUnitChip(u.id, u.amount)).join(' ');
+      const enemyUnits = Array.isArray(a.camp && a.camp.units)
+        ? a.camp.units
+        : Object.entries((a.camp && a.camp.units) || {}).map(([id, amount]) => ({ id, amount }));
+      const enemy = enemyUnits.map((u) => renderUnitChip(u.id, u.amount)).join(' ');
 
       const squadHtml = (a.squad || []).map((s) => {
         const sLost = s.perUnit.filter((u) => u.lost > 0)
@@ -1720,6 +1783,12 @@ function renderResult(r) {
   if ($('btnCopyClientPlan')) {
     $('btnCopyClientPlan').onclick = () => copyClientScriptToClipboard();
   }
+  if ($('btnDownloadClientPlan')) {
+    $('btnDownloadClientPlan').onclick = () => downloadClientScript();
+  }
+  if ($('btnOpenAutobitModal')) {
+    $('btnOpenAutobitModal').onclick = () => openAutobitModal();
+  }
   document.querySelectorAll('.btn-wave-copy-client').forEach((btn) => {
     btn.onclick = (e) => {
       e.stopPropagation();
@@ -1727,10 +1796,113 @@ function renderResult(r) {
       copyClientScriptToClipboard(waveNum);
     };
   });
+  document.querySelectorAll('.btn-wave-autobit').forEach((btn) => {
+    btn.onclick = (e) => {
+      e.stopPropagation();
+      const waveNum = Number(btn.getAttribute('data-wave'));
+      openAutobitModal(waveNum);
+    };
+  });
+}
+
+function findSnapshotCampForAttack(camp) {
+  if (!LAST_ADVENTURE_SNAPSHOT || !Array.isArray(LAST_ADVENTURE_SNAPSHOT.camps) || !LAST_ADVENTURE_SNAPSHOT.camps.length) return null;
+  const snapCamps = LAST_ADVENTURE_SNAPSHOT.camps;
+  if (!camp) return null;
+
+  // 1. Direct grid match if camp already has a grid
+  if (camp.grid) {
+    const found = snapCamps.find((sc) => sc.grid === camp.grid);
+    if (found) return found;
+  }
+
+  // 2. Match by units composition
+  const campUnits = camp.units;
+  if (campUnits) {
+    const cMap = {};
+    if (Array.isArray(campUnits)) {
+      for (const u of campUnits) {
+        if (u && (u.id || u.name) && (u.amount || u.count) > 0) {
+          const uid = u.id || u.name;
+          const uamt = Number(u.amount || u.count);
+          cMap[uid] = (cMap[uid] || 0) + uamt;
+        }
+      }
+    } else if (typeof campUnits === 'object') {
+      for (const [uid, uamt] of Object.entries(campUnits)) {
+        if (Number(uamt) > 0) cMap[uid] = (cMap[uid] || 0) + Number(uamt);
+      }
+    }
+
+    const cKeys = Object.keys(cMap);
+
+    let candidates = snapCamps;
+    if (camp.sector != null) {
+      const bySector = snapCamps.filter((sc) => sc.sector === camp.sector);
+      if (bySector.length > 0) candidates = bySector;
+    }
+
+    for (const sc of candidates) {
+      const scMap = {};
+      if (Array.isArray(sc.units)) {
+        for (const u of sc.units) {
+          const uid = u && (u.id || u.name);
+          const ucnt = Number(u && (u.count || u.amount || 0));
+          if (uid && ucnt > 0) scMap[uid] = (scMap[uid] || 0) + ucnt;
+        }
+      } else if (sc.units && typeof sc.units === 'object') {
+        for (const [uid, ucnt] of Object.entries(sc.units)) {
+          if (Number(ucnt) > 0) scMap[uid] = (scMap[uid] || 0) + Number(ucnt);
+        }
+      }
+
+      const scKeys = Object.keys(scMap);
+      if (cKeys.length > 0 && cKeys.length === scKeys.length && cKeys.every((k) => cMap[k] === scMap[k])) {
+        return sc;
+      }
+    }
+  }
+
+  // 3. Fallback: match by camp number
+  if (camp.number && camp.number <= snapCamps.length) {
+    return snapCamps[camp.number - 1];
+  }
+  return null;
+}
+
+const BOSS_BUILDING_PATTERNS = /leader|boss|Dark_Castle|WitchTower|Bonechurch|EnchantedCastle|CursedTower|CursedCastle|AuroraTower|Palace.*leader|Residence.*leader|Stronghold.*leader/i;
+
+function isLeaderOrBossCamp(camp, snapCamp) {
+  if (snapCamp) {
+    if (snapCamp.isLeader) return true;
+    if (snapCamp.buildingKey && BOSS_BUILDING_PATTERNS.test(snapCamp.buildingKey)) return true;
+    if (snapCamp.name && /вожак|босс|ватажок|leader|boss/i.test(snapCamp.name)) return true;
+  }
+  if (camp) {
+    if (camp.isLeader) return true;
+    if (camp.type === 'Leader' || camp.type === 'Boss') return true;
+    if (camp.building && BOSS_BUILDING_PATTERNS.test(camp.building)) return true;
+  }
+  return false;
 }
 
 function getCampClientTarget(camp) {
-  if (!camp) return { target: 0, targetName: '' };
+  if (!camp) return { target: 0, targetName: '', snapCamp: null };
+  const snapCamp = findSnapshotCampForAttack(camp);
+  if (snapCamp && snapCamp.grid > 0) {
+    let name = snapCamp.name || '';
+    if (typeof tBuilding === 'function') {
+      const key = snapCamp.buildingKey || snapCamp.name || camp.building || '';
+      if (key) {
+        const tr = tBuilding(key);
+        if (tr) name = tr;
+      }
+    }
+    if (!name) name = camp.building && typeof tBuilding === 'function' ? tBuilding(camp.building) : '';
+    if (!name) name = camp.type ? tCampType(camp.type) : 'Лагерь';
+    return { target: snapCamp.grid, targetName: name, snapCamp };
+  }
+
   let target = 0;
   if (camp.coordinates && typeof camp.coordinates.x === 'number' && typeof camp.coordinates.y === 'number') {
     target = camp.coordinates.x + camp.coordinates.y * 68;
@@ -1742,67 +1914,78 @@ function getCampClientTarget(camp) {
 
   let name = '';
   const b = camp.building || '';
-  if (b.includes('Banditsleader') || b.includes('leader') || camp.type === 'Leader') {
-    name = 'Шатер вожака разбойников';
-  } else if (b.includes('BanditsLvl2') || camp.type === 'Medium') {
-    name = 'Лагерь разбойников (средний)';
-  } else if (b.includes('BanditsLvl3') || camp.type === 'Heavy') {
-    name = 'Лагерь разбойников (сложный)';
-  } else if (b.includes('Bandits') || camp.type === 'Small') {
-    name = 'Лагерь разбойников (легкий)';
-  } else {
-    name = 'Лагерь разбойников';
+  if (b && typeof tBuilding === 'function') {
+    const tr = tBuilding(b);
+    if (tr && tr !== b) name = tr;
   }
 
-  if (name.length > 25) {
-    name = name.slice(0, 24) + '...';
+  if (!name) {
+    if (b.includes('Banditsleader') || b.includes('leader') || camp.type === 'Leader') {
+      name = typeof tBuilding === 'function' ? tBuilding('Banditsleader_Adventure') : 'Шатер вожака разбойников';
+    } else if (b.includes('BanditsLvl2') || camp.type === 'Medium') {
+      name = typeof tBuilding === 'function' ? tBuilding('BanditsLvl2_Adventure') : 'Лагерь разбойников (средний)';
+    } else if (b.includes('BanditsLvl3') || camp.type === 'Heavy') {
+      name = typeof tBuilding === 'function' ? tBuilding('BanditsLvl3_Adventure') : 'Лагерь разбойников (сложный)';
+    } else if (b.includes('Bandits') || camp.type === 'Small') {
+      name = typeof tBuilding === 'function' ? tBuilding('Bandits_Adventure') : 'Лагерь разбойников (легкий)';
+    } else {
+      name = camp.type ? tCampType(camp.type) : (typeof tBuilding === 'function' ? tBuilding('Bandits_Adventure') : 'Лагерь разбойников');
+    }
   }
 
-  return { target, targetName: name };
+  return { target, targetName: name, snapCamp: null };
+}
+
+function getAutobitDelayTime() {
+  const raw = ($('numAutobitTime') && Number($('numAutobitTime').value)) || 1000;
+  return Math.max(0, Math.round(raw / 1000) * 1000);
 }
 
 function generateClientBattlePacket(waveIndex = null) {
   if (!LAST_PLAN_RESULT || !LAST_PLAN_RESULT.waves || !LAST_PLAN_RESULT.waves.length) return null;
 
+  const specialists = getAutobitSpecialists();
   const waves = waveIndex != null
     ? LAST_PLAN_RESULT.waves.filter((w) => w.index === waveIndex)
     : LAST_PLAN_RESULT.waves;
 
   if (!waves.length) return null;
 
+  const attacks = extractAttacksFromPlan(LAST_PLAN_RESULT, waveIndex != null ? waveIndex : 'all');
+  if (!attacks.length) return null;
+
+  const delayTime = getAutobitDelayTime();
+  const rows = adaptPlanAttacksToSpecialists(attacks, specialists, delayTime);
+
   const packet = {};
   let currentOrder = 0;
 
-  for (const w of waves) {
-    for (const a of w.attacks) {
-      const { target, targetName } = getCampClientTarget(a.camp);
-      const squad = a.squad || [];
+  for (const r of rows) {
+    const atk = r.atk;
+    const spec = r.spec;
+    const uid = spec ? spec.id : (atk.requiredUid || `gen_${currentOrder}`);
 
-      for (let sIdx = 0; sIdx < squad.length; sIdx++) {
-        const s = squad[sIdx];
-        const g = s.general;
-        const uid = g.uid;
-
-        const armyMap = {};
-        for (const u of (s.army || [])) {
-          if (u.amount > 0) {
-            armyMap[u.id] = u.amount;
-          }
-        }
-
-        packet[uid] = {
-          grid: g.grid != null ? g.grid : 0,
-          name: g.rawName || (g.name ? `<b>${g.name}</b>` : `<b>${g.base}</b>`),
-          order: currentOrder++,
-          time: 1000,
-          skills: g.skills || {},
-          army: armyMap,
-          type: g.type || 1,
-          target,
-          targetName,
-        };
-      }
+    let skillsObj = {};
+    if (spec && spec.skills && typeof spec.skills === 'object' && !Array.isArray(spec.skills)) {
+      skillsObj = spec.skills;
     }
+
+    const rawName = (spec && spec.rawName) || `<b>${(spec && spec.name) || atk.requiredName}</b>`;
+    const genType = (spec && spec.type != null) ? spec.type : 1;
+    const genGrid = (spec && spec.grid != null) ? spec.grid : 0;
+    const timeVal = r.calculatedTime != null ? r.calculatedTime : delayTime;
+
+    packet[uid] = {
+      grid: genGrid,
+      name: rawName,
+      order: currentOrder++,
+      time: timeVal,
+      skills: skillsObj,
+      army: atk.army,
+      type: genType,
+      target: atk.target,
+      targetName: atk.targetName,
+    };
   }
 
   return packet;
@@ -1812,9 +1995,15 @@ function copyClientScriptToClipboard(waveIndex = null) {
   const isMultiWave = LAST_PLAN_RESULT && LAST_PLAN_RESULT.waves && LAST_PLAN_RESULT.waves.length > 1;
   const targetWave = waveIndex != null ? waveIndex : (isMultiWave ? 1 : null);
 
+  if (!isClientScriptReady(LAST_PLAN_RESULT, targetWave)) {
+    showToast(t('toast.autobitNeedPlan'), 'warn');
+    return;
+  }
+
   const packet = generateClientBattlePacket(targetWave);
   if (!packet || Object.keys(packet).length === 0) return;
 
+  LAST_AUTOBIT_PACKET = packet;
   const jsonStr = JSON.stringify(packet, null, ' ');
   navigator.clipboard.writeText(jsonStr).then(() => {
     if (targetWave != null && isMultiWave) {
@@ -1890,13 +2079,14 @@ function showToast(msg, type = 'ok') {
       border-radius: 9999px;
       font-size: 13px;
       font-weight: 600;
-      z-index: 100;
+      z-index: 10000;
       transition: opacity 0.3s ease, transform 0.3s ease;
       pointer-events: none;
       box-shadow: 0 10px 30px rgba(0,0,0,0.5);
     `;
-    document.body.appendChild(toast);
   }
+  const toastHost = document.querySelector('dialog[open]') || document.body;
+  if (toast.parentNode !== toastHost) toastHost.appendChild(toast);
 
   if (type === 'ok') {
     toast.style.background = 'rgba(16, 185, 129, 0.95)';
@@ -1914,6 +2104,955 @@ function showToast(msg, type = 'ok') {
     toast.style.opacity = '0';
     toast.style.transform = 'translateX(-50%) translateY(10px)';
   }, 2500);
+}
+
+// ---------------------------------------------------------------------------
+// Autobit Script Studio & In-Game UID Mapper
+// ---------------------------------------------------------------------------
+let LAST_AUTOBIT_PACKET = null;
+
+const GAME_TYPE_BASES = {
+  1: 'General', 3: 'General', 7: 'HalloweenGeneral', 8: 'General',
+  9: 'EasterGeneral', 11: 'General', 13: 'MajorGeneral', 14: 'StarGeneral1',
+  15: 'StarGeneral2', 16: 'StarGeneral3', 24: 'General', 25: 'LordDraculGeneral',
+  27: 'SantaGeneral', 29: 'GeneralVargus', 30: 'GeneralAnslem', 31: 'GeneralNusala',
+  33: 'Xmas2019General', 36: 'MedicGeneral', 37: 'MadScientistGeneral', 47: 'MajorGeneral',
+  50: 'Halloween2019General', 56: 'AssassinGeneral', 57: 'SylvanaGeneral', 63: 'GhostGeneral',
+  75: 'NutcrackerGeneral', 79: 'ResoluteGeneral', 85: 'GeneralJuan', 96: 'NarcissisticGeneral',
+};
+
+const BASE_TO_GAME_TYPE = {
+  HalloweenGeneral: 7, EasterGeneral: 9, MajorGeneral: 13,
+  StarGeneral1: 14, StarGeneral2: 15, StarGeneral3: 16,
+  LordDraculGeneral: 25, SantaGeneral: 27, GeneralVargus: 29,
+  GeneralAnslem: 30, GeneralNusala: 31, Xmas2019General: 33,
+  MedicGeneral: 36, MadScientistGeneral: 37, Halloween2019General: 50,
+  AssassinGeneral: 56, SylvanaGeneral: 57, GhostGeneral: 63,
+  NutcrackerGeneral: 75, ResoluteGeneral: 79, GeneralJuan: 85,
+  NarcissisticGeneral: 96, GeneralMary: 33, General: 1,
+};
+
+const GAME_NAME_BASES = [
+  ['призрачн', 'GhostGeneral'], ['майор', 'MajorGeneral'],
+  ['боевых искусств', 'StarGeneral3'], ['мастер защит', 'StarGeneral2'],
+  ['мастер зашит', 'StarGeneral2'], ['медик', 'MedicGeneral'],
+  ['безумн', 'MadScientistGeneral'], ['щелкунчик', 'NutcrackerGeneral'],
+  ['шелкунчик', 'NutcrackerGeneral'], ['сильван', 'SylvanaGeneral'],
+  ['хуан', 'GeneralJuan'], ['ветеран', 'EasterGeneral'],
+  ['близнец', 'Halloween2019General'], ['решительн', 'ResoluteGeneral'],
+  ['клаус', 'Xmas2019General'], ['жнец', 'HalloweenGeneral'],
+  ['нарцис', 'NarcissisticGeneral'], ['скрыт', 'AssassinGeneral'],
+  ['мери', 'GeneralMary'], ['крис', 'GeneralMary'],
+];
+
+function stripHtml(text) {
+  const src = String(text == null ? '' : text);
+  let out = '';
+  let depth = 0;
+  for (const ch of src) {
+    if (ch === '<') { depth += 1; continue; }
+    if (ch === '>') { if (depth > 0) depth -= 1; continue; }
+    if (depth === 0) out += ch;
+  }
+  return out.split(' ').filter((part) => part !== '').join(' ').trim();
+}
+
+function baseFromGameGeneral(name, type, typeMap) {
+  const byType = typeMap && (typeMap[type] || typeMap[String(type)]);
+  if (byType) return byType;
+  if (GAME_TYPE_BASES[type]) return GAME_TYPE_BASES[type];
+  const lower = stripHtml(name).toLowerCase();
+  for (const pair of GAME_NAME_BASES) if (lower.includes(pair[0])) return pair[1];
+  return null;
+}
+
+function hasExtraLifeGeneral(spec) {
+  if (!spec) return false;
+  const base = spec.base || '';
+  if (['GhostGeneral', 'NarcissisticGeneral', 'Halloween2019General'].includes(base)) return true;
+  if (Array.isArray(spec.skills)) {
+    return spec.skills.some((s) => typeof s === 'string' && s.startsWith('Skill_InstantRecovery'));
+  }
+  if (spec.skills && typeof spec.skills === 'object') {
+    if (spec.skills.Skill_InstantRecovery || spec.skills['16'] || spec.skills[16]) return true;
+  }
+  if (spec.skillList && typeof spec.skillList === 'object') {
+    if (spec.skillList.Skill_InstantRecovery || spec.skillList['16'] || spec.skillList[16]) return true;
+  }
+  return false;
+}
+
+function parseInGameSpecialists(raw) {
+  if (!raw) return [];
+  let data = raw;
+  if (typeof raw === 'string') {
+    try {
+      data = JSON.parse(raw.trim());
+    } catch (e) {
+      return [];
+    }
+  }
+
+  if (data && typeof data === 'object' && (data.type === 'adventure_snapshot' || Array.isArray(data.camps))) {
+    LAST_ADVENTURE_SNAPSHOT = {
+      adventureName: data.adventureName || '',
+      adventureKey: data.adventureKey || '',
+      isAdventure: !!data.isAdventure,
+      campsCount: data.campsCount || (Array.isArray(data.camps) ? data.camps.length : 0),
+      camps: Array.isArray(data.camps) ? data.camps : [],
+      zoneId: data.zoneId || 0,
+      exportedAt: data.exportedAt || null,
+      specialistsCount: Array.isArray(data.specialists) ? data.specialists.length : 0,
+    };
+  }
+
+  let specs = [];
+  if (Array.isArray(data)) {
+    specs = data;
+  } else if (data && typeof data === 'object') {
+    if (Array.isArray(data.specialists)) specs = data.specialists;
+    else if (Array.isArray(data.generals)) specs = data.generals;
+    else {
+      const norm = normalizeExport(data);
+      if (norm && Array.isArray(norm.specialists)) specs = norm.specialists;
+    }
+  }
+
+  return specs.map((s, idx) => {
+    const rawName = s.rawName || (s.name ? (s.name.includes('<b') ? s.name : `<b>${s.name}</b>`) : `<b>${s.base || 'General'}</b>`);
+    const cleanName = stripHtml(s.name || s.base || `General ${idx + 1}`);
+    const resolvedType = s.type != null ? s.type : (BASE_TO_GAME_TYPE[s.base] || 1);
+    const resolvedBase = s.base || baseFromGameGeneral(cleanName, resolvedType) || 'General';
+    const cap = Number(s.capacity) || 200;
+    return {
+      id: String(s.id != null ? s.id : (s.uid != null ? s.uid : `spec_${idx + 1}`)),
+      name: cleanName,
+      rawName,
+      base: resolvedBase,
+      type: resolvedType,
+      grid: s.grid != null ? Number(s.grid) : 0,
+      capacity: cap,
+      skills: s.skills || {},
+      skillPoints: s.skillPoints || 0,
+      iconId: s.iconId || null,
+      has1UP: hasExtraLifeGeneral({ base: resolvedBase, skills: s.skills }),
+      distancesToCamps: s.distancesToCamps || {},
+    };
+  });
+}
+
+function extractAttacksFromPlan(plan, targetWave = 'all') {
+  if (!plan || !plan.waves) return [];
+  const list = [];
+  const waves = (targetWave === 'all' || targetWave == null)
+    ? plan.waves
+    : plan.waves.filter((w) => w.index === Number(targetWave));
+
+  let globalOrder = 0;
+  for (const w of waves) {
+    for (const a of (w.attacks || [])) {
+      const { target, targetName, snapCamp } = getCampClientTarget(a.camp);
+      const squad = a.squad || [];
+
+      for (let sIdx = 0; sIdx < squad.length; sIdx++) {
+        const s = squad[sIdx];
+        const g = s.general || {};
+        const armyMap = {};
+        let totalUnits = 0;
+        for (const u of (s.army || [])) {
+          if (u.amount > 0) {
+            armyMap[u.id] = u.amount;
+            totalUnits += u.amount;
+          }
+        }
+
+        const role = String(s.role || '');
+        const isOpener = role.includes('вскрытие') || role.includes('opener') || role.includes('відкриття');
+        const isLeader = isLeaderOrBossCamp(a.camp, snapCamp);
+
+        list.push({
+          waveIndex: w.index,
+          campNumber: a.camp ? a.camp.number : 0,
+          campType: a.camp ? a.camp.type : 'Small',
+          order: globalOrder++,
+          stepOrder: s.order || (sIdx + 1),
+          requiredUid: g.uid != null ? String(g.uid) : null,
+          requiredBase: g.base || 'General',
+          requiredName: stripHtml(g.name || g.base || 'General'),
+          requiredCapacity: totalUnits,
+          army: armyMap,
+          isSacrifice: isOpener,
+          isLeader,
+          target,
+          targetName,
+          camp: a.camp || null,
+          snapCamp: snapCamp || null,
+          role: role || 'solo',
+          time: 1000,
+        });
+      }
+    }
+  }
+  return list;
+}
+
+const escAb = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+let AUTOBIT_STATE = { specialists: [], rows: [], status: 'noPlan', missingCount: 0, adaptedCount: 0 };
+
+function getAutobitSpecialists() {
+  const area = $('autobitGenJsonArea');
+  const text = area ? area.value.trim() : '';
+  if (text) return parseInGameSpecialists(text);
+  const saved = S.get('studioGenerals', null) || S.get('clientGenerals', null);
+  if (saved) return parseInGameSpecialists(saved);
+  return [];
+}
+
+function getGeneralTravelSpeed(specOrGen) {
+  const base = (specOrGen && (specOrGen.base || specOrGen.name)) || '';
+  const isSlow = base === 'General' || base === 'BattleGeneral' || base === 'TavernGeneral';
+  let speedMultiplier = isSlow ? 1.0 : 2.0;
+
+  let speedSkillLevel = 0;
+  if (specOrGen && specOrGen.skills && typeof specOrGen.skills === 'object') {
+    speedSkillLevel = Number(specOrGen.skills['5'] || specOrGen.skills[5] || specOrGen.skills['Skill_IncreaseCombatSpeed'] || 0);
+  }
+  if (speedSkillLevel > 0) {
+    speedMultiplier *= (1.0 + speedSkillLevel * 0.11);
+  }
+  return {
+    multiplier: speedMultiplier,
+    isSlow,
+    tilesPerSec: speedMultiplier * 0.30,
+  };
+}
+
+function getGridDist(g1, g2) {
+  if (g1 > 0 && g2 > 0) {
+    const W = 64;
+    const x1 = g1 % W;
+    const y1 = Math.floor(g1 / W);
+    const x2 = g2 % W;
+    const y2 = Math.floor(g2 / W);
+    return Math.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2);
+  }
+  return 0;
+}
+
+function getDistanceBetweenPoints(spec, targetGrid, snapCamp) {
+  if (spec && spec.distancesToCamps && targetGrid > 0) {
+    const d = spec.distancesToCamps[targetGrid] || spec.distancesToCamps[String(targetGrid)];
+    if (d > 0) return Number(d);
+  }
+  if (snapCamp && snapCamp.distances && spec && spec.id) {
+    const d = snapCamp.distances[spec.id];
+    if (d > 0) return Number(d);
+  }
+  const g1 = spec && spec.grid ? Number(spec.grid) : 0;
+  if (g1 > 0 && targetGrid > 0) {
+    const d = getGridDist(g1, targetGrid);
+    if (d > 0) return Math.round(d * 10) / 10;
+  }
+  return 35;
+}
+
+function getDistanceBetweenCamps(campA, campB) {
+  const gA = campA && (campA.grid || campA.target);
+  const gB = campB && (campB.grid || campB.target);
+  if (campA && campA.distancesToOtherCamps && gB) {
+    const d = campA.distancesToOtherCamps[gB] || campA.distancesToOtherCamps[String(gB)];
+    if (d > 0) return Number(d);
+  }
+  if (campB && campB.distancesToOtherCamps && gA) {
+    const d = campB.distancesToOtherCamps[gA] || campB.distancesToOtherCamps[String(gA)];
+    if (d > 0) return Number(d);
+  }
+  if (gA > 0 && gB > 0) {
+    return Math.round(getGridDist(gA, gB) * 10) / 10;
+  }
+  return 20;
+}
+
+function estimateTravelDistance(spec, atk) {
+  const tGrid = atk && atk.target ? Number(atk.target) : 0;
+
+  // 1. Exact pathfinding distance from client snapshot
+  if (spec && spec.distancesToCamps && tGrid > 0) {
+    const d = spec.distancesToCamps[tGrid] || spec.distancesToCamps[String(tGrid)];
+    if (d > 0 && d <= 50) return Number(d);
+  }
+  if (atk && atk.snapCamp && atk.snapCamp.distances && spec && spec.id) {
+    const d = atk.snapCamp.distances[spec.id];
+    if (d > 0 && d <= 50) return Number(d);
+  }
+
+  // 2. Sector-based realistic adventure distance
+  if (atk && atk.camp && atk.camp.sector) {
+    const s = Number(atk.camp.sector) || 1;
+    return Math.min(35, 14 + (s - 1) * 4);
+  }
+
+  // 3. Euclidean grid path estimation
+  const gGrid = spec && spec.grid ? Number(spec.grid) : 0;
+  if (gGrid > 100 && tGrid > 100) {
+    const d = getGridDist(gGrid, tGrid);
+    if (d >= 5 && d <= 45) return Math.round(d * 10) / 10;
+  }
+  return 18;
+}
+
+function calculateSafeAttackTimings(rows, baseDelayMs = 1000) {
+  // Ensure base delay is an exact multiple of 1 second (1000 ms)
+  const normBaseDelayMs = Math.max(1000, Math.round(baseDelayMs / 1000) * 1000);
+  const baseSec = Math.round(normBaseDelayMs / 1000);
+
+  if (!rows || !rows.length) return;
+
+  // First attack in wave: always base delay
+  rows[0].calculatedTime = normBaseDelayMs;
+  rows[0].timingType = 'base';
+  rows[0].timingBadge = `${baseSec} s`;
+  rows[0].timingDesc = t('autobit.timingBase');
+
+  for (let idx = 1; idx < rows.length; idx++) {
+    const prevR = rows[idx - 1];
+    const currR = rows[idx];
+
+    const prevAtk = prevR.atk;
+    const currAtk = currR.atk;
+
+    const prevCampNum = prevAtk ? prevAtk.campNumber : 0;
+    const currCampNum = currAtk ? currAtk.campNumber : 0;
+
+    const prevSpeed = getGeneralTravelSpeed(prevR.spec || prevAtk);
+    const currSpeed = getGeneralTravelSpeed(currR.spec || currAtk);
+
+    // Case 1: Squad attack on the SAME camp (e.g. Opener -> Closer on same camp)
+    if (prevCampNum > 0 && prevCampNum === currCampNum) {
+      const prevDist = estimateTravelDistance(prevR.spec, prevAtk);
+      const currDist = estimateTravelDistance(currR.spec, currAtk);
+
+      const prevTravelSec = prevDist / prevSpeed.tilesPerSec;
+      const currTravelSec = currDist / currSpeed.tilesPerSec;
+
+      let safeSec = 6;
+      let isOvertake = false;
+
+      if (currSpeed.multiplier > prevSpeed.multiplier) {
+        // Closer is faster than opener (e.g. 2x Boris vs 1x Tavern): must wait so opener stays ahead
+        isOvertake = true;
+        safeSec = Math.max(15, Math.ceil((prevTravelSec - currTravelSec) + 8));
+      } else {
+        // Same speed or closer is slower: standard safe spacing between squad waves
+        safeSec = Math.max(6, Math.ceil((prevTravelSec - currTravelSec) + 6));
+      }
+
+      safeSec = Math.min(30, Math.max(baseSec, safeSec));
+      currR.calculatedTime = safeSec * 1000;
+      currR.timingType = isOvertake ? 'overtake' : 'squad';
+      currR.timingBadge = `🛡 ${safeSec} s`;
+      currR.timingDesc = isOvertake
+        ? t('autobit.timingOvertake', { v1: prevSpeed.multiplier.toFixed(1), v2: currSpeed.multiplier.toFixed(1) })
+        : t('autobit.timingSafe');
+      continue;
+    }
+
+    // Case 2: Attacks on DIFFERENT camps (prev attacks Camp A, curr attacks Camp B)
+    const prevIsLeader = isLeaderOrBossCamp(prevAtk ? prevAtk.camp : null, prevAtk ? prevAtk.snapCamp : null);
+
+    // 2A: If the PREVIOUS camp was a Leader or Boss:
+    // Leader/Boss camps do NOT have an interception zone (граница отвлечения отсутствует),
+    // and will NEVER intercept passing generals.
+    // Therefore, the next attacking general has MINIMAL waiting (base delay, e.g. 1 s).
+    if (prevIsLeader) {
+      currR.calculatedTime = normBaseDelayMs;
+      currR.timingType = 'afterLeader';
+      currR.timingBadge = `${baseSec} s`;
+      currR.timingDesc = t('autobit.timingAfterLeader');
+      continue;
+    }
+
+    // 2B: If the PREVIOUS camp was a REGULAR camp:
+    // It has an active red interception zone. The current general (whether attacking a boss
+    // or another camp) risks being intercepted by the previous camp UNTIL the previous general
+    // arrives at that camp and locks it in combat (disabling its red aggro zone).
+    // Therefore, the current general MUST wait for the previous general to reach that camp and engage!
+    const travelDist = estimateTravelDistance(prevR.spec, prevAtk);
+    const prevTravelSec = travelDist / prevSpeed.tilesPerSec;
+
+    // Full arrival time at previous camp + 2s combat engagement buffer
+    let safeDelaySec = Math.ceil(prevTravelSec + 2);
+
+    // If current general is faster than previous general (e.g. 2x Boris vs 1x Tavern):
+    // add extra buffer so the faster general cannot catch up on the road
+    if (currSpeed.multiplier > prevSpeed.multiplier) {
+      safeDelaySec += 6;
+    }
+
+    // Realistic range for regular camp march: between 15s and 45s (rounded to whole seconds)
+    safeDelaySec = Math.min(45, Math.max(15, safeDelaySec));
+
+    currR.calculatedTime = safeDelaySec * 1000;
+    currR.timingType = 'interception';
+    currR.timingBadge = `🛡 ${safeDelaySec} s`;
+    currR.timingDesc = t('autobit.timingInterception', {
+      camp: prevCampNum || idx,
+      dist: Math.round(travelDist),
+    });
+  }
+}
+
+function adaptPlanAttacksToSpecialists(attacks, specialists, baseDelayMs = 1000) {
+  const byId = new Map(specialists.map((s) => [String(s.id), s]));
+  const assignedUids = new Set();
+  const rows = [];
+
+  // Pass 1: Direct UID match
+  for (const atk of attacks) {
+    if (atk.requiredUid != null && byId.has(String(atk.requiredUid)) && !assignedUids.has(String(atk.requiredUid))) {
+      const spec = byId.get(String(atk.requiredUid));
+      assignedUids.add(String(spec.id));
+      rows.push({ atk, spec, adapted: false });
+    } else {
+      rows.push({ atk, spec: null, adapted: false });
+    }
+  }
+
+  // Pass 2: Match unassigned attacks to available specialists by base class, capacity, 1-UP
+  for (const r of rows) {
+    if (r.spec) continue;
+    const atk = r.atk;
+    const candidates = specialists.filter((s) => !assignedUids.has(String(s.id)));
+    if (!candidates.length) continue;
+
+    let best = null;
+    let bestScore = -1;
+
+    for (const cand of candidates) {
+      let score = 0;
+      const sameBase = cand.base === atk.requiredBase;
+      if (sameBase) score += 100;
+      else continue;
+
+      if (cand.capacity >= atk.requiredCapacity) score += 50;
+      else score -= 30;
+
+      if (atk.isSacrifice && cand.has1UP) score += 20;
+      if (!atk.isSacrifice && !cand.has1UP) score += 5;
+
+      if (cand.grid && cand.grid > 0) score += 10;
+
+      if (score > bestScore) {
+        bestScore = score;
+        best = cand;
+      }
+    }
+
+    if (best) {
+      r.spec = best;
+      r.adapted = true;
+      assignedUids.add(String(best.id));
+    }
+  }
+
+  calculateSafeAttackTimings(rows, baseDelayMs);
+  return rows;
+}
+
+// Checks if the auto-battle script is connected, in-game specialists with UIDs
+// are obtained, and all generals deployed in the plan/wave match those game specialists.
+function isClientScriptReady(plan = LAST_PLAN_RESULT, waveIndex = null) {
+  if (!plan || !plan.waves || !plan.waves.length) return false;
+  const specialists = getAutobitSpecialists();
+  if (!specialists.length) return false;
+
+  const attacks = extractAttacksFromPlan(plan, waveIndex != null ? waveIndex : 'all');
+  if (!attacks.length) return false;
+
+  const rows = adaptPlanAttacksToSpecialists(attacks, specialists);
+  return rows.every((r) => r.spec != null);
+}
+
+function updateClientCopyButtonsVisibility() {
+  const mainBtn = $('btnCopyClientPlan');
+  if (mainBtn) {
+    mainBtn.style.display = isClientScriptReady(LAST_PLAN_RESULT, 'all') ? '' : 'none';
+  }
+  document.querySelectorAll('.btn-wave-copy-client').forEach((btn) => {
+    const waveNum = btn.dataset.wave ? Number(btn.dataset.wave) : null;
+    btn.style.display = isClientScriptReady(LAST_PLAN_RESULT, waveNum) ? '' : 'none';
+  });
+}
+
+function updateAutobitGenBadge(count) {
+  const badge = $('autobitGenBadge');
+  if (!badge) return;
+  badge.textContent = count ? t('autobit.genLoadedBadge', { count }) : t('autobit.genNoneBadge');
+  badge.classList.toggle('ok', !!count);
+  badge.classList.toggle('warn', !count);
+}
+
+function renderAutobitSnapshotBanner() {
+  const banner = $('autobitSnapshotBanner');
+  if (!banner) return;
+  if (!LAST_ADVENTURE_SNAPSHOT || !LAST_ADVENTURE_SNAPSHOT.adventureName) {
+    banner.style.display = 'none';
+    banner.innerHTML = '';
+    return;
+  }
+  const snap = LAST_ADVENTURE_SNAPSHOT;
+  const isAdv = snap.isAdventure;
+  const title = t('autobit.snapshotBadge', { name: snap.adventureName });
+  const info = t('autobit.snapshotInfo', {
+    camps: snap.campsCount || 0,
+    gens: snap.specialistsCount || 0,
+  });
+  banner.style.display = 'block';
+  banner.innerHTML = `
+    <div class="autobit-banner ${isAdv ? 'ok' : 'info'}" style="margin:0; padding:8px 12px; font-size:12px;">
+      <div class="autobit-banner-text">
+        <b>${isAdv ? '⚔️' : '🏰'} ${escAb(title)}</b> · <span class="dim">${escAb(info)}</span>
+      </div>
+    </div>
+  `;
+}
+
+function getSelectedAutobitWave() {
+  const sel = $('selAutobitWave');
+  return sel && sel.value ? sel.value : 'all';
+}
+
+function resetAutobitResult() {
+  LAST_AUTOBIT_PACKET = null;
+  if ($('cardAutobitResults')) $('cardAutobitResults').style.display = 'none';
+}
+
+// Rebuilds the attack preview table and automatically adapts simulation
+// requirements to the available in-game specialists with safe attack timings.
+function refreshAutobitPreview() {
+  const specialists = getAutobitSpecialists();
+  updateAutobitGenBadge(specialists.length);
+  renderAutobitSnapshotBanner();
+
+  const delayTime = getAutobitDelayTime();
+  const attacks = extractAttacksFromPlan(LAST_PLAN_RESULT, getSelectedAutobitWave());
+  const rows = adaptPlanAttacksToSpecialists(attacks, specialists, delayTime);
+  const missingCount = rows.filter((r) => !r.spec).length;
+  const adaptedCount = rows.filter((r) => r.adapted).length;
+
+  let status = 'ok';
+  if (!attacks.length) status = 'noPlan';
+  else if (!specialists.length) status = 'noGenerals';
+  else if (missingCount) status = 'mismatch';
+
+  AUTOBIT_STATE = { specialists, rows, status, missingCount, adaptedCount };
+  resetAutobitResult();
+  renderAutobitPlanStatus();
+  renderAutobitTable();
+
+  const btn = $('btnAutobitAnalyze');
+  if (btn) btn.disabled = status !== 'ok';
+  if ($('autobitBuildHint')) {
+    $('autobitBuildHint').textContent = status === 'ok' ? t('autobit.buildHintOk') : t('autobit.buildHintBlocked');
+  }
+  updateClientCopyButtonsVisibility();
+}
+
+function renderAutobitPlanStatus() {
+  const box = $('autobitPlanStatus');
+  if (!box) return;
+  const { status, rows, missingCount, adaptedCount } = AUTOBIT_STATE;
+  const total = rows.length;
+  let cls = 'ok';
+  let text = '';
+  let action = '';
+  if (status === 'noPlan') {
+    cls = 'warn';
+    text = t('autobit.planNone');
+  } else if (status === 'noGenerals') {
+    cls = 'info';
+    text = t('autobit.planNoGenerals');
+  } else if (status === 'mismatch') {
+    cls = 'danger';
+    text = t('autobit.planMismatch', { missing: missingCount, total });
+    action = `<button class="pri sm" id="btnAutobitApplyRecalc" style="white-space:nowrap;">${t('autobit.btnApplyRecalc')}</button>`;
+  } else if (adaptedCount > 0) {
+    text = t('autobit.planAdapted', { total });
+  } else {
+    text = t('autobit.planOk', { total });
+  }
+  box.innerHTML = `<div class="autobit-banner ${cls}"><div class="autobit-banner-text">${text}</div>${action}</div>`;
+  if ($('btnAutobitApplyRecalc')) $('btnAutobitApplyRecalc').onclick = applyAutobitGeneralsAndRecalc;
+}
+
+function renderAutobitTable() {
+  const tbody = $('autobitTableBody');
+  if (!tbody) return;
+  const { rows, specialists } = AUTOBIT_STATE;
+  if (!rows.length) {
+    tbody.innerHTML = `<tr><td colspan="6" class="autobit-empty">${t('autobit.tableEmpty')}</td></tr>`;
+    return;
+  }
+  const hasGenerals = specialists.length > 0;
+  tbody.innerHTML = rows.map((r, idx) => {
+    const atk = r.atk;
+    const s = r.spec;
+    const armyChips = Object.entries(atk.army || {})
+      .filter(([, amt]) => amt > 0)
+      .map(([id, amt]) => renderUnitChip(id, amt))
+      .join(' ');
+    const opener = atk.isSacrifice ? ` <span class="tag-pill warn" style="font-size:10px;">${t('autobit.roleOpener')}</span>` : '';
+
+    let inGame;
+    if (s) {
+      const adaptedPill = r.adapted ? `<span class="tag-pill info" style="font-size:10px; margin-right:4px;" title="${escAb(t('autobit.adaptedDesc'))}">⚡ ${t('autobit.adaptedTag')}</span>` : '';
+      const gridBadge = s.grid > 0 ? `<span class="tag-pill ok font-mono" style="font-size:10px; margin-left:4px;" title="Garrison grid">#${s.grid}</span>` : '';
+      inGame = `<div style="font-weight:700; color:#f1f5f9; display:flex; align-items:center; flex-wrap:wrap; gap:4px;">
+          ${adaptedPill}<span>${escAb(s.name)}</span>${gridBadge}
+        </div>
+        <div class="dim font-mono" style="font-size:11px;">UID: ${escAb(s.id)} · ${t('atk.cap', { cap: s.capacity })}</div>`;
+    } else if (hasGenerals) {
+      inGame = `<span class="tag-pill danger">${t('autobit.notInList')}</span>`;
+    } else {
+      inGame = '<span class="dim">—</span>';
+    }
+
+    const timingBadge = r.timingBadge || `${Math.round((r.calculatedTime || 1000) / 1000)} s`;
+    const isOvertake = r.timingType === 'overtake';
+    const timingPill = `<div style="display:flex; flex-direction:column; align-items:flex-start; gap:2px;">
+      <span class="tag-pill ${isOvertake ? 'warn' : 'ok'}" style="font-size:11px; font-weight:700; white-space:nowrap;" title="${escAb(r.timingDesc || '')}">${timingBadge}</span>
+      <span class="dim" style="font-size:10px; max-width:140px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${escAb(r.timingDesc || '')}">${escAb(r.timingDesc || '')}</span>
+    </div>`;
+
+    return `
+      <tr class="${hasGenerals && !s ? 'missing' : ''}">
+        <td class="font-mono" style="font-weight:700;">${idx + 1}</td>
+        <td>
+          <div style="font-weight:700; font-size:12px; display:flex; align-items:center; gap:4px;">
+            <span>${t('atk.camp', { num: atk.campNumber })}</span>
+            ${atk.isLeader ? `<span class="tag-pill info" style="font-size:9px;" title="${escAb(t('autobit.campLeaderBadge'))}">👑 ${t('camp.legend.boss')}</span>` : ''}
+          </div>
+          <div class="dim" style="font-size:11px;">${escAb(atk.targetName)} · ID ${escAb(atk.target)}</div>
+        </td>
+        <td>
+          <div style="font-weight:600; color:#93c5fd; font-size:12px;">${escAb(atk.requiredName)}${opener}</div>
+          <div class="dim" style="font-size:11px;">${escAb(atk.requiredBase)}</div>
+        </td>
+        <td class="font-mono">${armyChips}</td>
+        <td>${inGame}</td>
+        <td>${timingPill}</td>
+      </tr>
+    `;
+  }).join('');
+}
+
+async function copyTextAutobit(text) {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch (e) {
+    try {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      (document.querySelector('dialog[open]') || document.body).appendChild(ta);
+      ta.select();
+      const ok = document.execCommand('copy');
+      ta.remove();
+      return ok;
+    } catch (e2) {
+      return false;
+    }
+  }
+}
+
+async function buildAutobitScript() {
+  refreshAutobitPreview();
+  const st = AUTOBIT_STATE;
+  if (st.status === 'noPlan') { showToast(t('toast.autobitNeedPlan'), 'warn'); return; }
+  if (st.status === 'noGenerals') { showToast(t('toast.autobitNoGenerals'), 'warn'); return; }
+  if (st.status === 'mismatch') { showToast(t('toast.autobitMismatch'), 'warn'); return; }
+
+  const delayTime = getAutobitDelayTime();
+  const packet = {};
+  st.rows.forEach((r, idx) => {
+    const s = r.spec;
+    const atk = r.atk;
+    packet[s.id] = {
+      grid: s.grid != null ? s.grid : 0,
+      name: s.rawName || `<b>${s.name}</b>`,
+      order: idx,
+      time: r.calculatedTime != null ? r.calculatedTime : delayTime,
+      skills: s.skills || {},
+      army: atk.army,
+      type: s.type != null ? s.type : 1,
+      target: atk.target,
+      targetName: atk.targetName,
+    };
+  });
+
+  LAST_AUTOBIT_PACKET = packet;
+  const jsonStr = JSON.stringify(packet, null, ' ');
+  if ($('autobitScriptOutput')) $('autobitScriptOutput').textContent = jsonStr;
+  if ($('autobitStatusPills')) {
+    $('autobitStatusPills').innerHTML = `<span class="tag-pill ok">${t('autobit.summarySuccess', { count: st.rows.length })}</span>`;
+  }
+  const card = $('cardAutobitResults');
+  if (card) {
+    card.style.display = 'flex';
+    card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  const copied = await copyTextAutobit(jsonStr);
+  showToast(copied ? t('toast.autobitScriptCopied') : t('toast.autobitCopyManual'), copied ? 'ok' : 'warn');
+}
+
+function openAutobitModal(targetWave = null) {
+  const modal = $('autobitModal');
+  if (!modal) return;
+
+  // The Autobit script runs one wave at a time, so a wave is always selected.
+  const selWave = $('selAutobitWave');
+  if (selWave) {
+    const waves = (LAST_PLAN_RESULT && LAST_PLAN_RESULT.waves) || [];
+    if (!waves.length) {
+      selWave.innerHTML = `<option value="all">${t('autobit.waveNone')}</option>`;
+      selWave.disabled = true;
+    } else {
+      selWave.innerHTML = waves.map((w) => `<option value="${w.index}">${t('autobit.waveNum', { num: w.index })}</option>`).join('');
+      selWave.disabled = waves.length === 1;
+      const prev = selWave.dataset.last;
+      let want = String(waves[0].index);
+      if (targetWave != null && waves.some((w) => w.index === Number(targetWave))) want = String(targetWave);
+      else if (prev && waves.some((w) => String(w.index) === prev)) want = prev;
+      selWave.value = want;
+      selWave.dataset.last = want;
+    }
+  }
+
+  const area = $('autobitGenJsonArea');
+  const saved = S.get('studioGenerals', null);
+  if (saved && area && !area.value.trim()) area.value = JSON.stringify(saved, null, ' ');
+
+  if (!modal.open) {
+    if (modal.showModal) modal.showModal();
+    else modal.setAttribute('open', '');
+  }
+  refreshAutobitPreview();
+}
+
+function closeAutobitModal() {
+  const modal = $('autobitModal');
+  if (!modal) return;
+  if (modal.close) modal.close();
+  else modal.removeAttribute('open');
+}
+
+async function copyAutobitScript() {
+  if (!LAST_AUTOBIT_PACKET || Object.keys(LAST_AUTOBIT_PACKET).length === 0) {
+    showToast(t('toast.autobitNeedPlan'), 'warn');
+    return;
+  }
+  const copied = await copyTextAutobit(JSON.stringify(LAST_AUTOBIT_PACKET, null, ' '));
+  showToast(copied ? t('toast.autobitScriptCopied') : t('toast.copyFailed'), copied ? 'ok' : 'warn');
+}
+
+// Makes the in-game generals the calculator's main roster (all enabled).
+async function saveAutobitGeneralsToRoster() {
+  const jsonText = $('autobitGenJsonArea') ? $('autobitGenJsonArea').value.trim() : '';
+  if (!jsonText) {
+    showToast(t('toast.autobitNoGenerals'), 'warn');
+    return false;
+  }
+  try {
+    const data = JSON.parse(jsonText);
+    if (!parseInGameSpecialists(data).length) {
+      showToast(t('toast.autobitParseEmpty'), 'warn');
+      return false;
+    }
+    S.set('studioGenerals', data);
+    S.set('clientGenerals', data);
+    S.set('generalsExport', data);
+    localStorage.removeItem('tsoplan.enabledGenerals');
+    await applyGeneralsExport(data);
+    S.set('enabledGenerals', GENERALS.map((g) => g.uid));
+    renderGeneralsTable(GENERALS);
+    showToast(t('toast.autobitSavedToRoster'), 'ok');
+    refreshAutobitPreview();
+    return true;
+  } catch (e) {
+    showToast(t('toast.jsonError', { err: e.message }), 'warn');
+    return false;
+  }
+}
+
+async function applyAutobitGeneralsAndRecalc() {
+  const ok = await saveAutobitGeneralsToRoster();
+  if (!ok) return;
+  const camps = ($('camps').value || '').split(/[,\s]+/).filter(Boolean);
+  if (!camps.length) {
+    showToast(t('toast.needCamps'), 'warn');
+    return;
+  }
+  const wave = getSelectedAutobitWave();
+  const before = LAST_PLAN_RESULT;
+  closeAutobitModal();
+  await run();
+  if (LAST_PLAN_RESULT && LAST_PLAN_RESULT !== before) {
+    openAutobitModal(wave !== 'all' ? wave : null);
+  }
+}
+
+function loadAutobitGeneralsData(data) {
+  const specs = parseInGameSpecialists(data);
+  if (!specs.length) {
+    showToast(t('toast.autobitParseEmpty'), 'warn');
+    return false;
+  }
+  if ($('autobitGenJsonArea')) $('autobitGenJsonArea').value = JSON.stringify(data, null, ' ');
+  S.set('studioGenerals', data);
+  if (data && (data.type === 'adventure_snapshot' || Array.isArray(data.camps))) {
+    const name = data.adventureName || 'Adventure';
+    const cCount = data.campsCount || (Array.isArray(data.camps) ? data.camps.length : 0);
+    showToast(t('toast.snapshotLoaded', { name, camps: cCount, gens: specs.length }), 'ok');
+    const currentAdv = $('adv') ? $('adv').value : '';
+    const advList = (META && Array.isArray(META.adventures)) ? META.adventures : [];
+    if (advList.length > 0 && (data.adventureKey || data.adventureName)) {
+      const advMatch = advList.find((id) =>
+        id === data.adventureKey ||
+        tAdv(id) === data.adventureName ||
+        (getAdventureTranslations(id) && Object.values(getAdventureTranslations(id)).some((v) => v === data.adventureName))
+      );
+      if (advMatch && advMatch !== currentAdv && $('adv')) {
+        $('adv').value = advMatch;
+        S.set('adventure', advMatch);
+        updateDockSummary();
+        loadAdventureInfo();
+      }
+    }
+  } else {
+    showToast(t('toast.autobitGenLoaded', { count: specs.length }), 'ok');
+  }
+  refreshAutobitPreview();
+  return true;
+}
+
+function initAutobitJsonResize() {
+  const handle = $('autobitGenJsonResize');
+  const area = $('autobitGenJsonArea');
+  if (!handle || !area) return;
+  const clamp = (h) => Math.max(120, Math.min(window.innerHeight * 0.8, h));
+  const saved = Number(S.get('autobitJsonHeight', 0));
+  if (saved) area.style.height = clamp(saved) + 'px';
+
+  handle.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    handle.setPointerCapture(e.pointerId);
+    handle.classList.add('dragging');
+    const startY = e.clientY;
+    const startH = area.getBoundingClientRect().height;
+    const move = (ev) => { area.style.height = clamp(startH + ev.clientY - startY) + 'px'; };
+    const up = () => {
+      handle.classList.remove('dragging');
+      handle.removeEventListener('pointermove', move);
+      handle.removeEventListener('pointerup', up);
+      handle.removeEventListener('pointercancel', up);
+      S.set('autobitJsonHeight', Math.round(area.getBoundingClientRect().height));
+    };
+    handle.addEventListener('pointermove', move);
+    handle.addEventListener('pointerup', up);
+    handle.addEventListener('pointercancel', up);
+  });
+
+  // Double click toggles between compact and tall sizes.
+  handle.addEventListener('dblclick', () => {
+    const h = area.getBoundingClientRect().height < 400 ? clamp(window.innerHeight * 0.6) : 220;
+    area.style.height = h + 'px';
+    S.set('autobitJsonHeight', Math.round(h));
+  });
+}
+
+function initAutobitStudioEvents() {
+  if ($('btnAutobitClose')) $('btnAutobitClose').onclick = closeAutobitModal;
+  if ($('btnAutobitCloseFooter')) $('btnAutobitCloseFooter').onclick = closeAutobitModal;
+
+  if ($('btnAutobitCopyPath')) {
+    $('btnAutobitCopyPath').onclick = async () => {
+      const ok = await copyTextAutobit('%LOCALAPPDATA%\\tso_portable\\userscripts');
+      showToast(ok ? t('toast.pathCopied') : t('toast.copyFailed'), ok ? 'ok' : 'warn');
+    };
+  }
+
+  if ($('btnAutobitPasteGen')) {
+    $('btnAutobitPasteGen').onclick = async () => {
+      try {
+        let text = '';
+        if (navigator.clipboard && navigator.clipboard.readText) {
+          text = await navigator.clipboard.readText();
+        } else {
+          text = prompt(t('autobit.genHint'));
+        }
+        if (!text || !text.trim()) {
+          showToast(t('toast.clipboardEmpty'), 'warn');
+          return;
+        }
+        loadAutobitGeneralsData(JSON.parse(text.trim()));
+      } catch (err) {
+        showToast(t('toast.jsonError', { err: err.message }), 'warn');
+      }
+    };
+  }
+
+  if ($('fileAutobitGen')) {
+    $('fileAutobitGen').onchange = async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      try {
+        loadAutobitGeneralsData(JSON.parse(await file.text()));
+      } catch (err) {
+        showToast(t('toast.jsonError', { err: err.message }), 'warn');
+      } finally {
+        e.target.value = '';
+      }
+    };
+  }
+
+  if ($('btnAutobitToggleGenJson')) {
+    $('btnAutobitToggleGenJson').onclick = () => {
+      const wrap = $('autobitGenJsonWrap');
+      if (!wrap) return;
+      wrap.style.display = wrap.style.display === 'none' ? 'flex' : 'none';
+    };
+  }
+
+  if ($('autobitGenJsonArea')) {
+    $('autobitGenJsonArea').addEventListener('change', (e) => {
+      try {
+        const txt = e.target.value.trim();
+        if (txt) S.set('studioGenerals', JSON.parse(txt));
+      } catch (err) { /* invalid JSON is reported via the badge / status */ }
+      refreshAutobitPreview();
+    });
+  }
+  initAutobitJsonResize();
+
+  if ($('selAutobitWave')) {
+    $('selAutobitWave').onchange = (e) => {
+      e.target.dataset.last = e.target.value;
+      refreshAutobitPreview();
+    };
+  }
+
+  if ($('numAutobitTime')) {
+    $('numAutobitTime').oninput = () => refreshAutobitPreview();
+    $('numAutobitTime').onchange = () => refreshAutobitPreview();
+  }
+
+  if ($('btnAutobitAnalyze')) $('btnAutobitAnalyze').onclick = buildAutobitScript;
+  if ($('btnAutobitCopyScript')) $('btnAutobitCopyScript').onclick = copyAutobitScript;
+  if ($('btnAutobitSaveToRoster')) $('btnAutobitSaveToRoster').onclick = saveAutobitGeneralsToRoster;
 }
 
 init();

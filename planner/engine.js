@@ -87,13 +87,16 @@ function loadAdventure(id) {
 }
 
 function campGarrison(camp) {
+  const campUnits = Array.isArray(camp.units)
+    ? camp.units
+    : Object.entries(camp.units || {}).map(([id, amount]) => ({ id, amount }));
   return {
     kind: 'Default',
     hitpoints: camp.hitpoints ?? 250,
     camp_id: camp.key,
     camp_type: camp.type || 'Small',
     general: null,
-    units: (camp.units || []).map((u) => ({
+    units: campUnits.map((u) => ({
       id: u.id,
       value: u.value != null ? Number(u.value) : 0,
       amount: Number(u.amount) || 0,

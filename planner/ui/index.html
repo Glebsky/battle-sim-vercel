@@ -1146,6 +1146,18 @@
   .recovery-res-icon {
     font-size: 14px;
     line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .recovery-res-icon img,
+  img.res-icon {
+    width: 16px;
+    height: 16px;
+    vertical-align: middle;
+    object-fit: contain;
+    display: inline-block;
   }
 
   .recovery-res-name {
@@ -1944,6 +1956,227 @@
     font-size: 12px;
   }
 
+  /* Autobit Script Studio Modal */
+  .autobit-modal {
+    padding: 0;
+    border: 1px solid var(--border-card);
+    border-radius: var(--radius-lg);
+    background: rgba(11, 14, 20, 0.98);
+    backdrop-filter: blur(28px);
+    -webkit-backdrop-filter: blur(28px);
+    box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.85), 0 0 0 1px rgba(255, 255, 255, 0.08);
+    width: 90vw;
+    max-width: 980px;
+    height: 88vh;
+    max-height: 850px;
+    margin: auto;
+    overflow: hidden;
+    color: var(--text-main);
+  }
+
+  .autobit-modal::backdrop {
+    background: rgba(4, 6, 10, 0.78);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+
+  .autobit-modal-dialog {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+    position: relative;
+  }
+
+  .autobit-modal-header {
+    height: 56px;
+    padding: 0 20px;
+    background: rgba(16, 20, 29, 0.95);
+    border-bottom: 1px solid var(--border-subtle);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+    gap: 12px;
+  }
+
+  .autobit-modal-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    scrollbar-width: thin;
+  }
+
+  .autobit-modal-footer {
+    height: 56px;
+    padding: 0 20px;
+    background: rgba(16, 20, 29, 0.95);
+    border-top: 1px solid var(--border-subtle);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+    gap: 12px;
+  }
+
+  .autobit-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .autobit-guide-card {
+    background: linear-gradient(135deg, rgba(30, 41, 59, 0.75), rgba(15, 23, 42, 0.9));
+    border: 1px solid rgba(59, 130, 246, 0.35);
+    border-radius: var(--radius-md);
+    padding: 10px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+  }
+
+  .autobit-guide-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .autobit-guide-icon {
+    width: 30px;
+    height: 30px;
+    border-radius: var(--radius-sm);
+    background: rgba(59, 130, 246, 0.15);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    color: #60a5fa;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .autobit-guide-content {
+    flex: 1;
+    min-width: 220px;
+  }
+
+  .autobit-guide-title {
+    font-size: 12.5px;
+    font-weight: 700;
+    color: #f1f5f9;
+    margin-bottom: 2px;
+  }
+
+  .autobit-guide-text {
+    font-size: 11.5px;
+    line-height: 1.4;
+    color: var(--text-muted);
+  }
+
+  .autobit-steps-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px 12px;
+    padding-top: 8px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .autobit-step-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    font-size: 11px;
+    line-height: 1.35;
+    color: var(--text-muted);
+    background: rgba(255, 255, 255, 0.025);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: var(--radius-sm);
+    padding: 6px 10px;
+  }
+
+  .autobit-step-item b {
+    color: #e2e8f0;
+    display: inline;
+    margin-right: 4px;
+  }
+
+  .autobit-step-num {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: rgba(59, 130, 246, 0.2);
+    color: #93c5fd;
+    font-weight: 800;
+    font-size: 10.5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  .autobit-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .autobit-card-title {
+    font-size: 13px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text-main);
+  }
+
+  .autobit-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+  }
+
+  .autobit-table th {
+    text-align: left;
+    padding: 8px 10px;
+    background: var(--bg-inset);
+    color: var(--text-muted);
+    font-size: 11px;
+    font-weight: 600;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .autobit-table td {
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--border-subtle);
+    vertical-align: middle;
+  }
+
+  .autobit-code-preview {
+    max-height: 180px;
+    overflow-y: auto;
+    background: var(--bg-inset);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    padding: 10px 12px;
+    font-size: 11px;
+    font-family: 'Geist Mono', monospace;
+    white-space: pre;
+    color: #93c5fd;
+    scrollbar-width: thin;
+    margin: 0;
+  }
+
   /* ==========================================================================
      Responsive Design & Media Queries
      ========================================================================== */
@@ -2006,7 +2239,7 @@
 
   /* Tablets & Mobile Landscape (<= 768px) */
   @media (max-width: 768px) {
-    .map-modal {
+    .map-modal, .autobit-modal {
       width: 100vw;
       max-width: 100vw;
       height: 100dvh;
@@ -2063,6 +2296,9 @@
 
   /* Standard Mobile (<= 640px) */
   @media (max-width: 640px) {
+    .autobit-steps-grid {
+      grid-template-columns: 1fr;
+    }
     header {
       padding: 0 10px;
       height: 52px;
@@ -2348,6 +2584,81 @@
       font-size: 11px;
     }
   }
+
+  /* Generals tab: two clearly separated sources */
+  .gen-sources { display: flex; flex-direction: column; margin-bottom: 10px; }
+  .gen-source-block {
+    display: flex; flex-direction: column; gap: 6px; padding: 10px;
+    border: 1px solid var(--border-subtle); border-radius: var(--radius-sm);
+    background: rgba(255, 255, 255, 0.02);
+  }
+  .gen-source-block .drop-zone { margin: 0; }
+  .gen-source-label { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 700; color: #e2e8f0; }
+  .gen-source-num {
+    width: 18px; height: 18px; border-radius: 50%; flex-shrink: 0;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 800; color: #93c5fd;
+    background: rgba(96, 165, 250, 0.18); border: 1px solid rgba(96, 165, 250, 0.4);
+  }
+  .gen-source-hint { font-size: 11px; color: var(--text-muted); line-height: 1.45; }
+  .gen-source-or {
+    display: flex; align-items: center; gap: 8px; margin: 8px 0;
+    font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em;
+  }
+  .gen-source-or::before, .gen-source-or::after { content: ''; flex: 1; height: 1px; background: var(--border-subtle); }
+
+  /* Autobit studio: guide */
+  .autobit-path-row { display: flex; align-items: center; gap: 6px; margin-top: 4px; }
+  .autobit-path-row code, .autobit-step-item code, .autobit-guide-text code {
+    font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 11px;
+    background: var(--bg-inset); border: 1px solid var(--border-subtle); border-radius: 4px;
+    padding: 2px 6px; color: #a7f3d0; word-break: break-all;
+  }
+
+  /* Autobit studio: generals loader */
+  .autobit-gen-hint { font-size: 12px; color: var(--text-muted); line-height: 1.45; }
+  .autobit-gen-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+  .autobit-btn-group { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+  .autobit-link-btn {
+    background: none; border: none; color: #60a5fa; font-size: 12px; cursor: pointer;
+    padding: 4px 2px; text-decoration: underline dotted; text-underline-offset: 3px;
+  }
+  .autobit-link-btn:hover { color: #93c5fd; }
+  .autobit-json-wrap { display: flex; flex-direction: column; }
+  .autobit-json-area {
+    width: 100%; height: 220px; min-height: 120px; box-sizing: border-box;
+    background: var(--bg-inset); border: 1px solid var(--border-subtle); border-bottom: none;
+    border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+    padding: 8px; font-size: 11px; color: #e2e8f0; resize: none;
+  }
+  .autobit-resize-handle {
+    height: 16px; cursor: ns-resize; touch-action: none; user-select: none;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(255, 255, 255, 0.04); border: 1px solid var(--border-subtle);
+    border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+  }
+  .autobit-resize-handle span { width: 48px; height: 4px; border-radius: 2px; background: rgba(148, 163, 184, 0.5); }
+  .autobit-resize-handle:hover, .autobit-resize-handle.dragging { background: rgba(96, 165, 250, 0.1); }
+  .autobit-resize-handle:hover span, .autobit-resize-handle.dragging span { background: #60a5fa; }
+
+  /* Autobit studio: plan status + preview */
+  .autobit-banner {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    padding: 10px 12px; border-radius: var(--radius-sm); border: 1px solid;
+    font-size: 12px; line-height: 1.5;
+  }
+  .autobit-banner-text { flex: 1; min-width: 220px; }
+  .autobit-banner.ok { background: rgba(16, 185, 129, 0.08); border-color: rgba(16, 185, 129, 0.35); color: #a7f3d0; }
+  .autobit-banner.info { background: rgba(96, 165, 250, 0.08); border-color: rgba(96, 165, 250, 0.35); color: #bfdbfe; }
+  .autobit-banner.warn { background: rgba(245, 158, 11, 0.08); border-color: rgba(245, 158, 11, 0.4); color: #fde68a; }
+  .autobit-banner.danger { background: rgba(239, 68, 68, 0.08); border-color: rgba(239, 68, 68, 0.4); color: #fecaca; }
+  .autobit-table-wrap { max-height: 340px; overflow: auto; border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); }
+  .autobit-table tr.missing td { background: rgba(239, 68, 68, 0.06); }
+  .autobit-table td.autobit-empty { text-align: center; padding: 16px; color: var(--text-muted); }
+  .autobit-build-row { display: flex; align-items: center; justify-content: center; gap: 12px; flex-wrap: wrap; }
+  .autobit-build-hint { font-size: 12px; color: var(--text-muted); }
+  #btnAutobitAnalyze:disabled { opacity: 0.5; cursor: not-allowed; }
+  .tag-pill.danger { background: rgba(239, 68, 68, 0.15); color: #fca5a5; border-color: rgba(239, 68, 68, 0.4); }
 </style>
 </head>
 <body class="tab-params">
@@ -2541,19 +2852,52 @@
             </div>
           </div>
 
-          <div class="drop-zone">
-            <input type="file" id="genFile" accept=".json">
-            <div class="drop-zone-text">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                <polyline points="17 8 12 3 7 8"></polyline>
-                <line x1="12" y1="3" x2="12" y2="15"></line>
-              </svg>
-              <span><b data-i18n="pane.gen.dropText">Generals export file (.json)</b></span>
+          <div class="gen-sources">
+            <!-- Option 1: tsowiki.eu export file -->
+            <div class="gen-source-block">
+              <div class="gen-source-label">
+                <span class="gen-source-num">1</span>
+                <span data-i18n="pane.gen.srcFileTitle">Export file from tsowiki.eu</span>
+              </div>
+              <div class="drop-zone">
+                <input type="file" id="genFile" accept=".json">
+                <div class="drop-zone-text">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="17 8 12 3 7 8"></polyline>
+                    <line x1="12" y1="3" x2="12" y2="15"></line>
+                  </svg>
+                  <span><b data-i18n="pane.gen.dropText">Generals export file (.json)</b></span>
+                </div>
+              </div>
+              <div class="gen-source-hint" data-i18n="pane.gen.dropHint" data-i18n-html="true">
+                💡 In the simulator at <a href="https://tsowiki.eu/simulator/" target="_blank" rel="noopener" style="color:#60a5fa; text-decoration:underline;">tsowiki.eu/simulator</a>: «Generals» &rarr; «Export», then upload the file here.
+              </div>
             </div>
-          </div>
-          <div style="font-size:11px; color:var(--text-muted); margin:-4px 0 10px 0; line-height:1.4;" data-i18n="pane.gen.dropHint" data-i18n-html="true">
-            💡 Export file from simulator at <a href="https://tsowiki.eu/simulator/" target="_blank" rel="noopener" style="color:#60a5fa; text-decoration:underline;">tsowiki.eu/simulator</a> (section «Generals» &rarr; «Export»).
+
+            <div class="gen-source-or"><span data-i18n="pane.gen.or">or</span></div>
+
+            <!-- Option 2: generals straight from the game via Autobit Script Studio -->
+            <div class="gen-source-block">
+              <div class="gen-source-label">
+                <span class="gen-source-num">2</span>
+                <span data-i18n="pane.gen.srcStudioTitle">Generals straight from the game</span>
+              </div>
+              <button class="sec sm" id="btnSidebarAutobit" style="width:100%; display:flex; align-items:center; justify-content:center; gap:6px; padding:6px 12px; font-weight:600;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect>
+                  <rect x="9" y="9" width="6" height="6"></rect>
+                  <line x1="9" y1="1" x2="9" y2="4"></line>
+                  <line x1="15" y1="1" x2="15" y2="4"></line>
+                  <line x1="9" y1="20" x2="9" y2="23"></line>
+                  <line x1="15" y1="20" x2="15" y2="23"></line>
+                </svg>
+                <span data-i18n="pane.gen.btnAutobit">🤖 Auto-Battle Script Studio</span>
+              </button>
+              <div class="gen-source-hint" data-i18n="pane.gen.studioHint">
+                Load generals from the game client: they replace the current ones and let you build an Auto-Battle attack script.
+              </div>
+            </div>
           </div>
 
           <div class="input-search-wrap">
@@ -2916,6 +3260,239 @@
       </div>
       <div class="map-queue-strip font-mono" id="mapQueueStrip"></div>
       <button class="pri sm" id="btnMapDone" data-i18n="mapModal.close" style="padding:6px 16px; font-weight:700;">Done</button>
+    </div>
+  </div>
+</dialog>
+
+<!-- Autobit Script Studio Modal -->
+<dialog id="autobitModal" class="autobit-modal">
+  <div class="autobit-modal-dialog">
+    <!-- Header -->
+    <div class="autobit-modal-header">
+      <div class="map-modal-title-group">
+        <div class="map-modal-icon-badge" style="background:linear-gradient(135deg, rgba(16,185,129,0.2), rgba(5,150,105,0.3)); border-color:rgba(16,185,129,0.4); color:#34d399;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect>
+            <rect x="9" y="9" width="6" height="6"></rect>
+            <line x1="9" y1="1" x2="9" y2="4"></line>
+            <line x1="15" y1="1" x2="15" y2="4"></line>
+            <line x1="9" y1="20" x2="9" y2="23"></line>
+            <line x1="15" y1="20" x2="15" y2="23"></line>
+            <line x1="20" y1="9" x2="23" y2="9"></line>
+            <line x1="20" y1="14" x2="23" y2="14"></line>
+            <line x1="1" y1="9" x2="4" y2="9"></line>
+            <line x1="1" y1="14" x2="4" y2="14"></line>
+          </svg>
+        </div>
+        <div class="map-modal-title-wrap">
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span class="map-modal-title" data-i18n="autobit.modalTitle">Auto-Battle Script Studio</span>
+            <span class="tag-pill ok font-mono" id="autobitGenBadge">0 gens</span>
+          </div>
+          <div class="map-modal-subtitle dim" data-i18n="autobit.modalSubtitle">Match player generals and generate attack script with game UIDs</div>
+        </div>
+      </div>
+      <button class="sec sm icon-only map-close-btn" id="btnAutobitClose" title="Close">✕</button>
+    </div>
+
+    <!-- Body -->
+    <div class="autobit-modal-body">
+      <!-- Guide: how to get generals from the game client -->
+      <div class="autobit-guide-card">
+        <div class="autobit-guide-header">
+          <div class="autobit-guide-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="16" x2="12" y2="12"></line>
+              <line x1="12" y1="8" x2="12.01" y2="8"></line>
+            </svg>
+          </div>
+          <div class="autobit-guide-content">
+            <div class="autobit-guide-title" data-i18n="autobit.guideTitle">How to get your generals from the game</div>
+            <div class="autobit-guide-text" data-i18n="autobit.guideDesc" data-i18n-html="true">
+              The Auto-Battle script needs the exact <b>UIDs</b> of your generals. Our user script exports them right from <b>The Settlers Online</b> client.
+            </div>
+          </div>
+          <a class="btn pri sm" href="/user_battle_sim.js" download="user_battle_sim.js" style="text-decoration:none; white-space:nowrap; gap:6px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="7 10 12 15 17 10"></polyline>
+              <line x1="12" y1="15" x2="12" y2="3"></line>
+            </svg>
+            <span data-i18n="autobit.btnDownloadUserscript">Download script (.js)</span>
+          </a>
+        </div>
+        <div class="autobit-steps-grid">
+          <div class="autobit-step-item">
+            <span class="autobit-step-num">1</span>
+            <div>
+              <b data-i18n="autobit.step1Title">Download the file</b>
+              <span data-i18n="autobit.step1Text" data-i18n-html="true">using the button on the right.</span>
+            </div>
+          </div>
+          <div class="autobit-step-item">
+            <span class="autobit-step-num">2</span>
+            <div>
+              <b data-i18n="autobit.step2Title">Put it into the client scripts folder</b>
+              <span data-i18n="autobit.step2Text">If the file already exists, replace it.</span>
+              <div class="autobit-path-row">
+                <code>%LOCALAPPDATA%\tso_portable\userscripts</code>
+                <button class="sec sm icon-only" id="btnAutobitCopyPath" title="Copy path" data-i18n-title="autobit.copyPathTip">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+          <div class="autobit-step-item">
+            <span class="autobit-step-num">3</span>
+            <div>
+              <b data-i18n="autobit.step3Title">Restart the game or refresh scripts</b>
+              <span data-i18n="autobit.step3Text">In the client scripts menu, open <b>«Military Specialists / Adventures»</b>.</span>
+            </div>
+          </div>
+          <div class="autobit-step-item">
+            <span class="autobit-step-num">4</span>
+            <div>
+              <b data-i18n="autobit.step4Title">Export data (generals + adventure)</b>
+              <span data-i18n="autobit.step4Text">Click the menu item in the game: the JSON snapshot of camps and specialists is copied to the clipboard instantly (or save the file). Then paste it into the field below.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 1: Generals and Adventure Snapshots -->
+      <div class="autobit-card">
+        <div class="autobit-card-header">
+          <div class="autobit-card-title">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--accent);">
+              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+              <circle cx="9" cy="7" r="4"></circle>
+            </svg>
+            <span data-i18n="autobit.genTitle">In-Game Generals & Adventure Snapshots</span>
+          </div>
+        </div>
+        <div class="autobit-gen-hint" data-i18n="autobit.genHint">
+          Paste the JSON copied from the in-game menu (adventure snapshot with generals or specialists export), or upload the exported .json file.
+        </div>
+        <div class="autobit-gen-toolbar">
+          <div class="autobit-btn-group">
+            <button class="pri sm" id="btnAutobitPasteGen">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+                <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+              </svg>
+              <span data-i18n="autobit.btnPasteGen">Paste from clipboard</span>
+            </button>
+            <label class="btn sec sm" style="margin:0; cursor:pointer;">
+              <input type="file" id="fileAutobitGen" accept=".json" style="display:none;">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="17 8 12 3 7 8"></polyline>
+                <line x1="12" y1="3" x2="12" y2="15"></line>
+              </svg>
+              <span data-i18n="autobit.btnUploadGen">Upload .json file</span>
+            </label>
+            <button class="sec sm" id="btnAutobitSaveToRoster">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                <polyline points="7 3 7 8 15 8"></polyline>
+              </svg>
+              <span data-i18n="autobit.btnApplyToRoster">Save as active generals in calculator</span>
+            </button>
+          </div>
+          <button type="button" class="autobit-link-btn" id="btnAutobitToggleGenJson">
+            <span data-i18n="autobit.btnToggleGenJson">Show / hide JSON</span>
+          </button>
+        </div>
+        <div class="autobit-json-wrap" id="autobitGenJsonWrap" style="display:none;">
+          <textarea id="autobitGenJsonArea" class="font-mono autobit-json-area" spellcheck="false" placeholder='{"specialists": [...]}'></textarea>
+          <div class="autobit-resize-handle" id="autobitGenJsonResize" title="Drag to resize" data-i18n-title="autobit.resizeTip"><span></span></div>
+        </div>
+        <div id="autobitSnapshotBanner" style="display:none; margin-top:10px;"></div>
+      </div>
+
+      <!-- Card 2: Attack preview (who attacks whom) -->
+      <div class="autobit-card">
+        <div class="autobit-card-header">
+          <div class="autobit-card-title">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:#fbbf24;">
+              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+            </svg>
+            <span data-i18n="autobit.atkTitle">Attacks for the script</span>
+          </div>
+          <div class="row gap-sm items-center" style="margin:0;">
+            <label style="font-size:12px; display:flex; align-items:center; gap:6px; cursor:pointer;">
+              <span data-i18n="autobit.waveLabel">Wave:</span>
+              <select id="selAutobitWave" class="input sm" style="padding:2px 8px; font-size:12px;"></select>
+            </label>
+            <label style="font-size:12px; display:flex; align-items:center; gap:6px;">
+              <span data-i18n="autobit.timeDelay">Delay (ms):</span>
+              <input type="number" id="numAutobitTime" value="1000" min="0" step="1000" style="width:65px; padding:2px 6px; font-size:12px;" class="input sm font-mono">
+            </label>
+          </div>
+        </div>
+
+        <div id="autobitPlanStatus"></div>
+
+        <div class="autobit-table-wrap">
+          <table class="autobit-table">
+            <thead>
+              <tr>
+                <th data-i18n="autobit.colNum">#</th>
+                <th data-i18n="autobit.colCamp">Camp (target)</th>
+                <th data-i18n="autobit.colGeneral">General in plan</th>
+                <th data-i18n="autobit.colArmy">Army</th>
+                <th data-i18n="autobit.colInGame">In-game general (UID)</th>
+                <th data-i18n="autobit.colDelay">Delay</th>
+              </tr>
+            </thead>
+            <tbody id="autobitTableBody"></tbody>
+          </table>
+        </div>
+
+        <div class="autobit-build-row">
+          <button class="pri" id="btnAutobitAnalyze" style="padding:8px 24px; font-size:13px; font-weight:700; display:flex; align-items:center; gap:8px;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polygon points="5 3 19 12 5 21 5 3"></polygon>
+            </svg>
+            <span data-i18n="autobit.btnAnalyze">Build script &amp; copy</span>
+          </button>
+          <span class="autobit-build-hint" id="autobitBuildHint"></span>
+        </div>
+      </div>
+
+      <!-- Card 3: Ready script -->
+      <div class="autobit-card" id="cardAutobitResults" style="display:none;">
+        <div class="autobit-card-header">
+          <div class="autobit-card-title">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:#34d399;">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+              <polyline points="22 4 12 14.01 9 11.01"></polyline>
+            </svg>
+            <span id="autobitResultsHeader" data-i18n="autobit.resultsHeader">Ready Auto-Battle script</span>
+          </div>
+          <div class="row gap-xs items-center" style="margin:0;">
+            <div id="autobitStatusPills"></div>
+            <button class="sec sm" id="btnAutobitCopyScript">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+              </svg>
+              <span data-i18n="autobit.btnCopyScript">Copy again</span>
+            </button>
+          </div>
+        </div>
+        <pre id="autobitScriptOutput" class="autobit-code-preview"></pre>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="autobit-modal-footer">
+      <button class="sec sm" id="btnAutobitCloseFooter" data-i18n="mapModal.close" style="margin-left:auto;">Close</button>
     </div>
   </div>
 </dialog>

@@ -144,6 +144,7 @@ const server = http.createServer(async (req, res) => {
     if (req.method === 'GET') {
       let reqPath = decodeURIComponent(url.pathname);
       if (reqPath === '/' || !reqPath) reqPath = '/index.html';
+      if (reqPath === '/99-export-generals.js') reqPath = '/user_battle_sim.js';
       const cleanPath = path.normalize(reqPath).replace(/^(\.\.[\/\\])+/, '');
       const candidates = [
         path.join(UI_DIR, cleanPath),

@@ -1,2 +1,10 @@
 /references/
 /.idea/
+/.vscode/
+/.patch/
+/node_modules/
+*.log
+generals.json
+*_test_*.json
+.DS_Store
+Thumbs.db
