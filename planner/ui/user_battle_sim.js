@@ -35,7 +35,22 @@ function getGeneralsLabel()
 	return t;
 }
 
-addToolsMenuItem(getGeneralsLabel() + " / " + getCombatMapLabel(), exportMenuHandler);
+function getMundaneWarfareLabel()
+{
+	var t = getLoca("ACL", "ExcelsiorLostCityBeforeRitual", null);
+	if(!t) {
+		var isRu = /[а-яА-ЯёЁ]/.test(getCombatMapLabel());
+		t = isRu ? "Типичная война" : "Mundane Warfare";
+	}
+	return t;
+}
+
+function getScriptMenuLabel()
+{
+	return getMundaneWarfareLabel() + " / " + getCombatMapLabel();
+}
+
+addToolsMenuItem(getScriptMenuLabel(), exportMenuHandler);
 
 var EXPORT_TYPE_TO_BASE = {
 	0: 'General',
@@ -722,7 +737,7 @@ function renderExportModal(defaultAction)
 	$("div[role='dialog']:visible").modal("hide");
 
 	// Create modal window cleanly from template
-	createModalWindow('exportGeneralsModal', getGeneralsLabel() + " / " + getCombatMapLabel());
+	createModalWindow('exportGeneralsModal', getScriptMenuLabel());
 
 	// Injected clean layout styles with proper top margins and ZERO box-shadows
 	$("head").append($("<style>", { 'id': 'exportGeneralsStyle' }).text(
@@ -790,7 +805,7 @@ function renderExportModal(defaultAction)
 	));
 
 	var titleIcon = resolveSpecialistIcon(null, 'General', '22px');
-	$('#exportGeneralsModal .modal-title').html(titleIcon + (getGeneralsLabel() + " / " + getCombatMapLabel()));
+	$('#exportGeneralsModal .modal-title').html(titleIcon + getScriptMenuLabel());
 
 	exportSnapshotLastData = exportAdventureSnapshotCollect();
 	exportGeneralsLastData = {
