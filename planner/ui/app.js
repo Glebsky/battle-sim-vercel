@@ -2560,7 +2560,7 @@ function adaptPlanAttacksToSpecialists(attacks, specialists, baseDelayMs = 1000)
   return rows;
 }
 
-// Checks if the Mundane Warfare script is connected, in-game specialists with UIDs
+// Checks if the Master Planner script is connected, in-game specialists with UIDs
 // are obtained, and all generals deployed in the plan/wave match those game specialists.
 function isClientScriptReady(plan = LAST_PLAN_RESULT, waveIndex = null) {
   if (!plan || !plan.waves || !plan.waves.length) return false;

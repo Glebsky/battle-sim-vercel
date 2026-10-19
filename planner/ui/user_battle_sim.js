@@ -35,19 +35,19 @@ function getGeneralsLabel()
 	return t;
 }
 
-function getMundaneWarfareLabel()
+function getMasterPlannerLabel()
 {
-	var t = getLoca("ACL", "ExcelsiorLostCityBeforeRitual", null);
+	var t = getLoca("LAB", "Skill_IncreaseAccuracy", null);
 	if(!t) {
 		var isRu = /[а-яА-ЯёЁ]/.test(getCombatMapLabel());
-		t = isRu ? "Типичная война" : "Mundane Warfare";
+		t = isRu ? "Умелое планирование" : "Master Planner";
 	}
 	return t;
 }
 
 function getScriptMenuLabel()
 {
-	return getMundaneWarfareLabel() + " / " + getCombatMapLabel();
+	return getMasterPlannerLabel();
 }
 
 addToolsMenuItem(getScriptMenuLabel(), exportMenuHandler);
